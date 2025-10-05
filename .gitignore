@@ -7,8 +7,7 @@
 # ============================================
 .claude/
 .claudeignore
-create_repo.bat
-gs.bat
+scripts/
 
 # ============================================
 # Ghost Ledger
