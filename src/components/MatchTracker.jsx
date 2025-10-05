@@ -37,14 +37,14 @@ const FootballMatchTracker = () => {
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   // State for match configuration
-  const [ageGroup, setAgeGroup] = useState('U12');
+  const [ageGroup, setAgeGroup] = useState('U7');
   const [homeTeam, setHomeTeam] = useState('Caterham Pumas');
   const [awayTeam, setAwayTeam] = useState('Opposition');
   const [setupComplete, setSetupComplete] = useState(false);
   const [playersConfigured, setPlayersConfigured] = useState(false);
   const [matchStarted, setMatchStarted] = useState(false);
-  const [useQuarters, setUseQuarters] = useState(false);
-  const [periodLength, setPeriodLength] = useState(30);
+  const [useQuarters, setUseQuarters] = useState(true);
+  const [periodLength, setPeriodLength] = useState(10);
   const [isHome, setIsHome] = useState(true);
 
   // State for player management
@@ -260,13 +260,21 @@ const FootballMatchTracker = () => {
     setIsRunning(true);
     setElapsedTime(0);
     setPeriodStarted(true);
-    
+
+    let previousMinutes = 0;
+    if (period === 'Q2') previousMinutes = periodLength;
+    else if (period === 'Q3') previousMinutes = periodLength * 2;
+    else if (period === 'Q4') previousMinutes = periodLength * 3;
+    else if (period === 'H2') previousMinutes = periodLength;
+
+    const cumulativeStartTime = previousMinutes * 60;
+
     const periodEvent = {
       id: Date.now(),
       type: 'period_start',
       period: period,
       timestamp: getCurrentTimestamp(),
-      timerValue: formatTime(0),
+      timerValue: formatTime(cumulativeStartTime),
       description: `${period} Start`,
     };
     setEvents((prevEvents) => [...prevEvents, periodEvent]);
@@ -332,14 +340,22 @@ const FootballMatchTracker = () => {
 
   const handleRecordGoal = (team, targetPeriod = null) => {
     const periodToUse = targetPeriod || currentPeriod;
-    
+
+    let previousMinutes = 0;
+    if (periodToUse === 'Q2') previousMinutes = periodLength;
+    else if (periodToUse === 'Q3') previousMinutes = periodLength * 2;
+    else if (periodToUse === 'Q4') previousMinutes = periodLength * 3;
+    else if (periodToUse === 'H2') previousMinutes = periodLength;
+
+    const cumulativeTime = (previousMinutes * 60) + elapsedTime;
+
     const goalEvent = {
       id: Date.now(),
       type: 'goal',
       team: team,
       period: periodToUse,
       timestamp: getCurrentTimestamp(),
-      timerValue: formatTime(elapsedTime),
+      timerValue: formatTime(cumulativeTime),
       description: `Goal - ${team}`,
       playerNumber: null,
       playerName: null,
@@ -351,27 +367,35 @@ const FootballMatchTracker = () => {
     );
     
     if (periodEndIndex !== -1) {
-      goalEvent.timerValue = formatTime(periodLength * 60);
-      
+      // Missed goal - record at end of period with cumulative time
+      let previousMinutesForMissed = 0;
+      if (periodToUse === 'Q2') previousMinutesForMissed = periodLength;
+      else if (periodToUse === 'Q3') previousMinutesForMissed = periodLength * 2;
+      else if (periodToUse === 'Q4') previousMinutesForMissed = periodLength * 3;
+      else if (periodToUse === 'H2') previousMinutesForMissed = periodLength;
+
+      const cumulativeEndTime = (previousMinutesForMissed * 60) + (periodLength * 60);
+      goalEvent.timerValue = formatTime(cumulativeEndTime);
+
       const periodStartEvent = events.find(
         e => e.type === 'period_start' && e.period === periodToUse
       );
-      
+
       if (periodStartEvent) {
         const startTimeParts = periodStartEvent.timestamp.split(':');
         const startHours = parseInt(startTimeParts[0]);
         const startMinutes = parseInt(startTimeParts[1]);
         const startSeconds = parseInt(startTimeParts[2]);
         const startTotalSeconds = (startHours * 3600) + (startMinutes * 60) + startSeconds;
-        
+
         const endTotalSeconds = startTotalSeconds + (periodLength * 60);
         const endHours = Math.floor(endTotalSeconds / 3600) % 24;
         const endMinutes = Math.floor((endTotalSeconds % 3600) / 60);
         const endSeconds = endTotalSeconds % 60;
-        
+
         goalEvent.timestamp = `${endHours.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')}:${endSeconds.toString().padStart(2, '0')}`;
       }
-      
+
       const newEvents = [...events];
       newEvents.splice(periodEndIndex, 0, goalEvent);
       setEvents(newEvents);
@@ -490,35 +514,25 @@ const FootballMatchTracker = () => {
     const homeGoals = events.filter(e => e.type === 'goal' && e.team === homeTeam);
     const awayGoals = events.filter(e => e.type === 'goal' && e.team === awayTeam);
 
-    const formatGoalsByPlayer = (goals) => {
-      const playerGoals = new Map();
-      const scorerOrder = [];
+    let exportText = `${homeTeam} ${homeGoals.length}–${awayGoals.length} ${awayTeam}\n\n`;
 
-      goals.forEach(g => {
-        const playerName = g.playerName || 'Player';
-        if (!playerGoals.has(playerName)) {
-          playerGoals.set(playerName, []);
-          scorerOrder.push(playerName);
+    events.forEach(event => {
+      if (event.type === 'period_start' || event.type === 'period_end') {
+        exportText += `${event.description} - ${event.timestamp} [${event.timerValue}]\n`;
+      } else if (event.type === 'goal') {
+        let goalLine = `${event.description}`;
+        if (event.playerName) {
+          goalLine += ` (${showNumbers && event.playerNumber ? `#${event.playerNumber} ` : ''}${event.playerName})`;
         }
-        const minute = calculateMatchMinute(g.timerValue, g.period);
-        const timeStr = g.isPenalty ? `${minute}'(pen)` : `${minute}'`;
-        playerGoals.get(playerName).push(timeStr);
-      });
-
-      return scorerOrder.map(playerName => {
-        const times = playerGoals.get(playerName).join(', ');
-        return `${playerName} (${times})`;
-      }).join('\n');
-    };
-
-    let exportText = `${homeTeam}: ${homeGoals.length}\n`;
-    if (homeGoals.length > 0) {
-      exportText += formatGoalsByPlayer(homeGoals) + '\n';
-    }
-    exportText += `\n${awayTeam}: ${awayGoals.length}\n`;
-    if (awayGoals.length > 0) {
-      exportText += formatGoalsByPlayer(awayGoals);
-    }
+        if (event.isPenalty) {
+          goalLine += ` (Penalty)`;
+        }
+        goalLine += ` - ${event.timestamp} [${event.timerValue}]`;
+        exportText += goalLine + '\n';
+      } else if (event.type === 'match_end') {
+        exportText += `${event.description} - ${event.timestamp} [${event.timerValue}]\n`;
+      }
+    });
 
     navigator.clipboard.writeText(exportText).then(() => {
       setShowCopied(true);
@@ -626,7 +640,7 @@ const FootballMatchTracker = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   Age
@@ -649,38 +663,35 @@ const FootballMatchTracker = () => {
                   Format
                 </label>
                 <select
-                  value={useQuarters ? 'quarters' : 'halves'}
+                  value={`${periodLength}-${useQuarters ? 'quarters' : 'halves'}`}
                   onChange={(e) => {
-                    const newUseQuarters = e.target.value === 'quarters';
-                    setUseQuarters(newUseQuarters);
-                    if (selectedAgeGroup) {
-                      if (newUseQuarters) {
-                        setPeriodLength(selectedAgeGroup.totalTime / 4);
-                      } else {
-                        setPeriodLength(selectedAgeGroup.totalTime / 2);
-                      }
-                    }
+                    const [length, format] = e.target.value.split('-');
+                    setPeriodLength(parseFloat(length));
+                    setUseQuarters(format === 'quarters');
                   }}
                   className="w-full p-3 bg-gray-700 border border-gray-600 text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <option value="halves">Halves</option>
-                  <option value="quarters">Quarters</option>
-                </select>
-              </div>
+                  {(() => {
+                    const selectedGroup = ageGroups.find(ag => ag.value === ageGroup);
+                    if (!selectedGroup) return null;
 
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Period (min)
-                </label>
-                <input
-                  type="number"
-                  value={periodLength}
-                  onChange={(e) => setPeriodLength(parseFloat(e.target.value) || 0)}
-                  step="0.5"
-                  min="1"
-                  max="90"
-                  className="w-full p-3 bg-gray-700 border border-gray-600 text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+                    // For U13 and above, only show halves
+                    if (['U13', 'U14', 'U15', 'U16', 'U17', 'U18', 'Adult'].includes(ageGroup)) {
+                      const halfLength = selectedGroup.totalTime / 2;
+                      return <option value={`${halfLength}-halves`}>{halfLength} min halves</option>;
+                    }
+
+                    // For U12 and below, show both quarters and halves options
+                    const quarterLength = selectedGroup.totalTime / 4;
+                    const halfLength = selectedGroup.totalTime / 2;
+                    return (
+                      <>
+                        <option value={`${quarterLength}-quarters`}>{quarterLength} min quarters</option>
+                        <option value={`${halfLength}-halves`}>{halfLength} min halves</option>
+                      </>
+                    );
+                  })()}
+                </select>
               </div>
             </div>
 
@@ -747,13 +758,13 @@ const FootballMatchTracker = () => {
 
             <div className="space-y-2 max-h-96 overflow-y-auto">
               {players.map((player, index) => (
-                <div key={index} className="flex gap-2 items-center bg-gray-700 p-3 rounded-lg">
+                <div key={index} className="flex gap-1 items-center bg-gray-700 p-2 rounded-lg">
                   {showNumbers && (
                     <input
                       type="number"
                       value={player.number}
                       onChange={(e) => handlePlayerNumberChange(index, e.target.value)}
-                      className="w-16 p-2 bg-gray-600 border border-gray-500 text-gray-100 rounded text-center"
+                      className="w-12 p-2 bg-gray-600 border border-gray-500 text-gray-100 rounded text-center text-sm"
                       min="1"
                     />
                   )}
@@ -762,11 +773,11 @@ const FootballMatchTracker = () => {
                     value={player.name}
                     onChange={(e) => handlePlayerNameChange(index, e.target.value)}
                     placeholder="Player name"
-                    className="flex-1 p-2 bg-gray-600 border border-gray-500 text-gray-100 rounded"
+                    className="flex-1 p-2 bg-gray-600 border border-gray-500 text-gray-100 rounded text-sm"
                   />
                   <button
                     onClick={() => handleRemovePlayer(index)}
-                    className="text-red-400 hover:text-red-300 p-2"
+                    className="text-red-400 hover:text-red-300 p-1 flex-shrink-0"
                   >
                     <Trash2 size={18} />
                   </button>
@@ -782,13 +793,21 @@ const FootballMatchTracker = () => {
               Add Player
             </button>
 
-            <button
-              onClick={handlePlayersComplete}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-200 flex items-center justify-center gap-2"
-            >
-              <Play size={20} />
-              Proceed to Match Tracker
-            </button>
+            <div className="flex gap-2 items-center">
+              <button
+                onClick={() => setSetupComplete(false)}
+                className="bg-gray-700 hover:bg-gray-600 text-gray-300 font-bold py-2 px-4 rounded-lg transition duration-200"
+              >
+                Back
+              </button>
+              <button
+                onClick={handlePlayersComplete}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-200 flex items-center justify-center gap-2"
+              >
+                <Play size={20} />
+                Proceed to Match Tracker
+              </button>
+            </div>
           </div>
         )}
 
@@ -812,9 +831,9 @@ const FootballMatchTracker = () => {
                   return (
                     <>
                       <div className="flex justify-center items-center mb-2">
-                        <span className="text-2xl font-bold text-gray-100 text-right flex-1">{homeTeam}</span>
-                        <span className="text-2xl font-bold text-orange-500 px-4">{homeGoals.length}–{awayGoals.length}</span>
-                        <span className="text-2xl font-bold text-gray-100 text-left flex-1">{awayTeam}</span>
+                        <span className="text-lg font-bold text-gray-100 text-right flex-1">{homeTeam}</span>
+                        <span className="text-lg font-bold text-orange-500 px-2">{homeGoals.length}–{awayGoals.length}</span>
+                        <span className="text-lg font-bold text-gray-100 text-left flex-1">{awayTeam}</span>
                       </div>
                       <div className="flex justify-center items-start font-mono text-sm text-gray-400">
                         <span className="text-right flex-1">
@@ -849,7 +868,7 @@ const FootballMatchTracker = () => {
                   })()}
                 </p>
                 
-                <div className="flex gap-2 justify-center mb-4">
+                <div className="gap-2 justify-center mb-4 hidden">
                   <button
                     onClick={() => setElapsedTime(prev => Math.min(prev + 10, periodLength * 60))}
                     className="bg-purple-600 hover:bg-purple-700 text-white text-sm font-bold py-1 px-3 rounded transition duration-200"
@@ -894,7 +913,7 @@ const FootballMatchTracker = () => {
                     className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg transition duration-200 flex items-center gap-2"
                   >
                     <Square size={20} />
-                    End {currentPeriod.startsWith('Q') ? `Quarter ${currentPeriod.substring(1)}` : `Half ${currentPeriod.substring(1)}`}
+                    End {currentPeriod}
                   </button>
                 </div>
               </div>
@@ -950,8 +969,42 @@ const FootballMatchTracker = () => {
             
             {!currentPeriod && !nextPeriod && events.some(e => e.type === 'match_end') && (
               <div className="mb-6">
-                <div className="bg-orange-600 text-white font-bold text-2xl py-6 px-6 rounded-lg text-center">
+                <div className="bg-orange-600 text-white font-bold text-2xl py-6 px-6 rounded-lg text-center mb-6">
                   FULL TIME
+                </div>
+
+                <div>
+                  <p className="text-sm text-gray-400 mb-3 text-center">
+                    Add missed goal from previous period:
+                  </p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <button
+                      onClick={() => {
+                        const completedPeriods = events
+                          .filter(e => e.type === 'period_end')
+                          .map(e => e.period);
+                        const lastPeriod = completedPeriods[completedPeriods.length - 1];
+                        handleMissedGoalClick(homeTeam, lastPeriod);
+                      }}
+                      className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2"
+                    >
+                      <Plus size={20} />
+                      Goal {homeTeam}
+                    </button>
+                    <button
+                      onClick={() => {
+                        const completedPeriods = events
+                          .filter(e => e.type === 'period_end')
+                          .map(e => e.period);
+                        const lastPeriod = completedPeriods[completedPeriods.length - 1];
+                        handleMissedGoalClick(awayTeam, lastPeriod);
+                      }}
+                      className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2"
+                    >
+                      <Plus size={20} />
+                      Goal {awayTeam}
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -1100,7 +1153,7 @@ const FootballMatchTracker = () => {
                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-200 flex items-center justify-center gap-2"
               >
                 <Download size={20} />
-                {showCopied ? 'Copied!' : 'Summary to Clipboard'}
+                {showCopied ? 'Copied!' : 'Match Data to Clipboard'}
               </button>
               <button
                 onClick={handleResetMatch}
