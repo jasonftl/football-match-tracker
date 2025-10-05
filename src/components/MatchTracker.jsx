@@ -490,22 +490,34 @@ const FootballMatchTracker = () => {
     const homeGoals = events.filter(e => e.type === 'goal' && e.team === homeTeam);
     const awayGoals = events.filter(e => e.type === 'goal' && e.team === awayTeam);
 
-    const homeGoalTimes = homeGoals.map(g => {
-      const minute = calculateMatchMinute(g.timerValue, g.period);
-      return g.isPenalty ? `${minute}'(pen)` : `${minute}'`;
-    }).join(', ');
-    const awayGoalTimes = awayGoals.map(g => {
-      const minute = calculateMatchMinute(g.timerValue, g.period);
-      return g.isPenalty ? `${minute}'(pen)` : `${minute}'`;
-    }).join(', ');
-    
-    let exportText = `${homeTeam} ${homeGoals.length} - ${awayGoals.length} ${awayTeam}\n`;
-    
+    const formatGoalsByPlayer = (goals) => {
+      const playerGoals = new Map();
+      const scorerOrder = [];
+
+      goals.forEach(g => {
+        const playerName = g.playerName || 'Player';
+        if (!playerGoals.has(playerName)) {
+          playerGoals.set(playerName, []);
+          scorerOrder.push(playerName);
+        }
+        const minute = calculateMatchMinute(g.timerValue, g.period);
+        const timeStr = g.isPenalty ? `${minute}'(pen)` : `${minute}'`;
+        playerGoals.get(playerName).push(timeStr);
+      });
+
+      return scorerOrder.map(playerName => {
+        const times = playerGoals.get(playerName).join(', ');
+        return `${playerName} (${times})`;
+      }).join('\n');
+    };
+
+    let exportText = `${homeTeam}: ${homeGoals.length}\n`;
     if (homeGoals.length > 0) {
-      exportText += `${homeTeam}: ${homeGoalTimes}\n`;
+      exportText += formatGoalsByPlayer(homeGoals) + '\n';
     }
+    exportText += `\n${awayTeam}: ${awayGoals.length}\n`;
     if (awayGoals.length > 0) {
-      exportText += `${awayTeam}: ${awayGoalTimes}`;
+      exportText += formatGoalsByPlayer(awayGoals);
     }
 
     navigator.clipboard.writeText(exportText).then(() => {
