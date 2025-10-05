@@ -282,15 +282,15 @@ const FootballMatchTracker = () => {
 
   const handleEndPeriod = () => {
     setIsRunning(false);
-    
+
     let previousMinutes = 0;
     if (currentPeriod === 'Q2') previousMinutes = periodLength;
     else if (currentPeriod === 'Q3') previousMinutes = periodLength * 2;
     else if (currentPeriod === 'Q4') previousMinutes = periodLength * 3;
     else if (currentPeriod === 'H2') previousMinutes = periodLength;
-    
+
     const cumulativeEndTime = (previousMinutes * 60) + (periodLength * 60);
-    
+
     const periodEndEvent = {
       id: Date.now(),
       type: 'period_end',
@@ -299,7 +299,17 @@ const FootballMatchTracker = () => {
       timerValue: formatTime(cumulativeEndTime),
       description: `${currentPeriod} End`,
     };
-    setEvents((prevEvents) => [...prevEvents, periodEndEvent]);
+
+    // Check if this period end event already exists
+    setEvents((prevEvents) => {
+      const alreadyExists = prevEvents.some(
+        e => e.type === 'period_end' && e.period === currentPeriod
+      );
+      if (alreadyExists) {
+        return prevEvents;
+      }
+      return [...prevEvents, periodEndEvent];
+    });
     
     const periods = getPeriods();
     const currentIndex = periods.indexOf(currentPeriod);
@@ -479,9 +489,15 @@ const FootballMatchTracker = () => {
   const handleExport = () => {
     const homeGoals = events.filter(e => e.type === 'goal' && e.team === homeTeam);
     const awayGoals = events.filter(e => e.type === 'goal' && e.team === awayTeam);
-    
-    const homeGoalTimes = homeGoals.map(g => calculateMatchMinute(g.timerValue, g.period) + "'").join(', ');
-    const awayGoalTimes = awayGoals.map(g => calculateMatchMinute(g.timerValue, g.period) + "'").join(', ');
+
+    const homeGoalTimes = homeGoals.map(g => {
+      const minute = calculateMatchMinute(g.timerValue, g.period);
+      return g.isPenalty ? `${minute}'(pen)` : `${minute}'`;
+    }).join(', ');
+    const awayGoalTimes = awayGoals.map(g => {
+      const minute = calculateMatchMinute(g.timerValue, g.period);
+      return g.isPenalty ? `${minute}'(pen)` : `${minute}'`;
+    }).join(', ');
     
     let exportText = `${homeTeam} ${homeGoals.length} - ${awayGoals.length} ${awayTeam}\n`;
     
@@ -507,6 +523,17 @@ const FootballMatchTracker = () => {
   };
 
   const confirmReset = () => {
+    // Save settings to preserve them
+    const savedSettings = {
+      ageGroup,
+      homeTeam,
+      awayTeam,
+      useQuarters,
+      periodLength,
+      isHome,
+      showNumbers,
+    };
+
     setSetupComplete(false);
     setPlayersConfigured(false);
     setMatchStarted(false);
@@ -514,14 +541,21 @@ const FootballMatchTracker = () => {
     setIsRunning(false);
     setElapsedTime(0);
     setEvents([]);
-    setHomeTeam('Caterham Pumas');
-    setAwayTeam('Opposition');
     setPeriodStarted(false);
-    if (selectedAgeGroup) {
-      setUseQuarters(selectedAgeGroup.defaultQuarters);
-      setPeriodLength(selectedAgeGroup.defaultPeriodLength);
-    }
-    localStorage.removeItem('footballMatchData');
+
+    // Restore the saved settings immediately after reset
+    localStorage.setItem('footballMatchData', JSON.stringify({
+      ...savedSettings,
+      setupComplete: false,
+      playersConfigured: false,
+      matchStarted: false,
+      currentPeriod: null,
+      elapsedTime: 0,
+      events: [],
+      periodStarted: false,
+    }));
+
+    // Note: Players, age group, team names, format, and period length are NOT reset - they persist across matches
     setShowResetConfirm(false);
   };
 
@@ -580,63 +614,62 @@ const FootballMatchTracker = () => {
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Age Group
-              </label>
-              <select
-                value={ageGroup}
-                onChange={(e) => handleAgeGroupChange(e.target.value)}
-                className="w-full p-3 bg-gray-700 border border-gray-600 text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                {ageGroups.map((ag) => (
-                  <option key={ag.value} value={ag.value}>
-                    {ag.label} - {ag.totalTime} min ({ag.defaultQuarters ? '4 × ' + ag.defaultPeriodLength + ' min quarters' : '2 × ' + ag.defaultPeriodLength + ' min halves'})
-                  </option>
-                ))}
-              </select>
-            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Age
+                </label>
+                <select
+                  value={ageGroup}
+                  onChange={(e) => handleAgeGroupChange(e.target.value)}
+                  className="w-full p-3 bg-gray-700 border border-gray-600 text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  {ageGroups.map((ag) => (
+                    <option key={ag.value} value={ag.value}>
+                      {ag.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Match Format
-              </label>
-              <select
-                value={useQuarters ? 'quarters' : 'halves'}
-                onChange={(e) => {
-                  const newUseQuarters = e.target.value === 'quarters';
-                  setUseQuarters(newUseQuarters);
-                  if (selectedAgeGroup) {
-                    if (newUseQuarters) {
-                      setPeriodLength(selectedAgeGroup.totalTime / 4);
-                    } else {
-                      setPeriodLength(selectedAgeGroup.totalTime / 2);
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Format
+                </label>
+                <select
+                  value={useQuarters ? 'quarters' : 'halves'}
+                  onChange={(e) => {
+                    const newUseQuarters = e.target.value === 'quarters';
+                    setUseQuarters(newUseQuarters);
+                    if (selectedAgeGroup) {
+                      if (newUseQuarters) {
+                        setPeriodLength(selectedAgeGroup.totalTime / 4);
+                      } else {
+                        setPeriodLength(selectedAgeGroup.totalTime / 2);
+                      }
                     }
-                  }
-                }}
-                className="w-full p-3 bg-gray-700 border border-gray-600 text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="quarters">Quarters (4 periods)</option>
-                <option value="halves">Halves (2 periods)</option>
-              </select>
-            </div>
+                  }}
+                  className="w-full p-3 bg-gray-700 border border-gray-600 text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="halves">Halves</option>
+                  <option value="quarters">Quarters</option>
+                </select>
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Period Length (minutes)
-              </label>
-              <input
-                type="number"
-                value={periodLength}
-                onChange={(e) => setPeriodLength(parseFloat(e.target.value) || 0)}
-                step="0.5"
-                min="1"
-                max="90"
-                className="w-full p-3 bg-gray-700 border border-gray-600 text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-              <p className="text-sm text-gray-400 mt-1">
-                Total match time: {useQuarters ? periodLength * 4 : periodLength * 2} minutes
-              </p>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Period (min)
+                </label>
+                <input
+                  type="number"
+                  value={periodLength}
+                  onChange={(e) => setPeriodLength(parseFloat(e.target.value) || 0)}
+                  step="0.5"
+                  min="1"
+                  max="90"
+                  className="w-full p-3 bg-gray-700 border border-gray-600 text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
             </div>
 
             <div>
@@ -755,8 +788,14 @@ const FootballMatchTracker = () => {
                 {(() => {
                   const homeGoals = events.filter(e => e.type === 'goal' && e.team === homeTeam);
                   const awayGoals = events.filter(e => e.type === 'goal' && e.team === awayTeam);
-                  const homeGoalTimes = homeGoals.map(g => calculateMatchMinute(g.timerValue, g.period)).join(', ');
-                  const awayGoalTimes = awayGoals.map(g => calculateMatchMinute(g.timerValue, g.period)).join(', ');
+                  const homeGoalTimes = homeGoals.map(g => {
+                    const minute = calculateMatchMinute(g.timerValue, g.period);
+                    return g.isPenalty ? `${minute}'(pen)` : `${minute}'`;
+                  }).join(', ');
+                  const awayGoalTimes = awayGoals.map(g => {
+                    const minute = calculateMatchMinute(g.timerValue, g.period);
+                    return g.isPenalty ? `${minute}'(pen)` : `${minute}'`;
+                  }).join(', ');
                   
                   return (
                     <>

@@ -234,10 +234,10 @@ When pencil icon clicked:
    - Shows confirmation modal:
      - "Are you sure you want to reset the match? All data will be lost."
      - Cancel / Reset buttons
-   - Clears all match data
+   - Clears all match data (events, timer, scores)
    - Returns to setup screen
    - Resets team names to defaults
-   - Preserves player data
+   - **Preserves player data** - players persist across all matches
 
 ---
 
@@ -332,7 +332,8 @@ Format as MM:SS
 ### 6.2 Behaviour
 - Auto-save on any state change
 - Load on app start
-- Clear match data on reset (preserves players)
+- Clear match data on reset
+- **Players persist across all matches** - never cleared on reset
 
 ---
 
