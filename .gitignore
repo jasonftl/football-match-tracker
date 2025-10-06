@@ -10,6 +10,7 @@
 .claudeignore
 node_modules/
 scripts/
+dev/
 
 # ============================================
 # Ghost Ledger
