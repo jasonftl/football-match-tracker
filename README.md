@@ -1,12 +1,12 @@
 # Football Match Tracker
 
-A Progressive Web App (PWA) for tracking football (soccer) matches from U7 to Adult level. Optimised for mobile devices and works completely offline.
+A Progressive Web App (PWA) for tracking football matches from U7 to Adult level. Optimised for mobile devices and works completely offline.
 
 ## Features
 
 - **Match Setup**: Configure age group, match format (quarters/halves/custom), and team names
 - **Custom Formats**: Create custom match formats with 1, 2, or 4 periods of any length
-- **Player Management**: Add and manage your team roster with optional player numbers
+- **Player Management**: Add and manage your team squad list with optional player numbers
 - **Substitute Tracking**: Mark players as starting or substitutes with green/red toggles
 - **Live Timer**: Track match time with cumulative display across periods
 - **Goal Tracking**: Record goals in real-time with timestamps
@@ -17,7 +17,7 @@ A Progressive Web App (PWA) for tracking football (soccer) matches from U7 to Ad
 - **Match Events**: View complete chronological list of all match events (goals, substitutions, periods)
 - **Export**: Copy detailed match data to clipboard for sharing
 - **Offline Support**: Works completely offline once installed
-- **Data Persistence**: Match settings, player rosters, and substitute status saved automatically
+- **Data Persistence**: Match settings, player squad lists, and substitute status saved automatically
 
 ## Installation
 
@@ -185,14 +185,14 @@ Match End - 15:10:00 [40:00]
 2. Confirm in the popup
 3. Match data is cleared
 4. Match configuration (age group, format, team names) is preserved
-5. Player roster is preserved (including substitute status)
+5. Player squad list is preserved (including substitute status)
 6. Returns to Match Setup screen for the next match
 
 ## Tips & Best Practices
 
 ### Before the Match
 
-- Set up your player roster before arriving at the field
+- Set up your player squad list before arriving at the pitch
 - Mark starting players (green) and substitutes (red)
 - Player names, numbers, and substitute status are saved for future matches
 - Check that the age group and format are correct
@@ -235,7 +235,7 @@ Match End - 15:10:00 [40:00]
 ## Data Storage
 
 - **Match Data**: Stored in browser localStorage, cleared on reset (includes all events: goals, substitutions, periods)
-- **Player Roster**: Stored in browser localStorage, persists across all matches
+- **Player Squad List**: Stored in browser localStorage, persists across all matches
   - Includes player numbers, names, and substitute status (green/red)
 - **Match Settings**: Preserved when resetting (age group, format, team names, custom periods)
 - **Offline**: All data stored locally, no internet required after installation
@@ -262,31 +262,6 @@ Match End - 15:10:00 [40:00]
 - Try manually selecting and copying the events list
 - Check browser clipboard permissions
 
-## Development
-
-### Prerequisites
-- Node.js 16+ and npm
-
-### Setup
-```bash
-npm install
-```
-
-### Run Development Server
-```bash
-npm run dev
-```
-
-### Build for Production
-```bash
-npm run build
-```
-
-### Preview Production Build
-```bash
-npm run preview
-```
-
 ## Browser Support
 
 - **iOS Safari**: 14+
@@ -308,7 +283,3 @@ npm run preview
 ## Support
 
 For issues or questions, please check the requirements document in `dev/requirements.md` or contact the development team.
-
----
-
-**Made for Caterham Pumas FC** ⚽
