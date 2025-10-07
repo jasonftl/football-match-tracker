@@ -3,9 +3,8 @@
 // Handles team selection and match configuration
 
 import React, { useState, useEffect } from 'react';
-import { Play, Info } from 'lucide-react';
+import { Play } from 'lucide-react';
 import { AGE_GROUPS } from '../constants/ageGroups';
-import AboutModal from './AboutModal';
 
 const MatchSetup = ({
   isHome,
@@ -28,9 +27,6 @@ const MatchSetup = ({
   // Local state for custom format
   const [isCustomFormat, setIsCustomFormat] = useState(customPeriods !== null);
   const [localCustomPeriods, setLocalCustomPeriods] = useState(customPeriods || 2);
-
-  // About modal state
-  const [showAbout, setShowAbout] = useState(false);
 
   // Get selected age group details
   const selectedAgeGroup = AGE_GROUPS.find(ag => ag.value === ageGroup);
@@ -250,21 +246,6 @@ const MatchSetup = ({
         <Play size={20} />
         Continue to Player Setup
       </button>
-
-      {/* About Button */}
-      <button
-        onClick={() => setShowAbout(true)}
-        className="w-full mt-3 bg-gray-700 hover:bg-gray-600 text-gray-100 font-bold py-2 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2"
-      >
-        <Info size={20} />
-        About
-      </button>
-
-      {/* About Modal */}
-      <AboutModal
-        isOpen={showAbout}
-        onClose={() => setShowAbout(false)}
-      />
     </div>
   );
 };

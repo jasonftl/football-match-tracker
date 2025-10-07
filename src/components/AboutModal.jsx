@@ -2,10 +2,23 @@
 // About Modal component for Football Match Tracker
 // Displays README.md instructions
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Info } from 'lucide-react';
 
 const AboutModal = ({ isOpen, onClose }) => {
+  const [debugMode, setDebugMode] = useState(() => {
+    const saved = localStorage.getItem('debugMode');
+    return saved === 'true';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('debugMode', debugMode.toString());
+  }, [debugMode]);
+
+  const handleToggleDebug = () => {
+    setDebugMode(!debugMode);
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -183,6 +196,30 @@ const AboutModal = ({ isOpen, onClose }) => {
           <div className="mt-6 pt-6 border-t border-gray-700 text-center text-sm text-gray-400">
             <p>© 2025 - All rights reserved</p>
           </div>
+        </div>
+
+        {/* Debug Mode Toggle */}
+        <div className="mt-6 pt-6 border-t border-gray-700">
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium text-gray-300">
+              Debug Mode (Show timer test buttons)
+            </label>
+            <button
+              onClick={handleToggleDebug}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                debugMode ? 'bg-orange-600' : 'bg-gray-600'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  debugMode ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+          <p className="text-xs text-gray-400 mt-2">
+            {debugMode ? 'Debug buttons enabled' : 'Debug buttons hidden'}
+          </p>
         </div>
 
         {/* Close Button */}

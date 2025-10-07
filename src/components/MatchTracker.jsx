@@ -576,9 +576,21 @@ const MatchTracker = () => {
   return (
     <div className="min-h-screen bg-gray-900 p-4">
       <div className="max-w-2xl mx-auto bg-gray-800 rounded-lg shadow-lg p-6">
-        <h1 className="text-3xl font-bold text-center text-orange-500 mb-6">
-          Football Match Tracker
-        </h1>
+        {/* Header with About button (only shown on first screen) */}
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold text-orange-500">
+            Football Match Tracker
+          </h1>
+          {!setupComplete && (
+            <button
+              onClick={() => setShowAbout(true)}
+              className="text-gray-400 hover:text-orange-500 transition duration-200"
+              title="About"
+            >
+              <Info size={24} />
+            </button>
+          )}
+        </div>
 
         {/* Match Setup Screen */}
         {!setupComplete && (
@@ -752,35 +764,35 @@ const MatchTracker = () => {
 
             {/* Goal Buttons */}
             {periodStarted && currentPeriod && (
-              <>
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <button
-                    onClick={() => handleRecordGoal(homeTeam)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2"
-                  >
-                    <Plus size={20} />
-                    Goal {homeTeam}
-                  </button>
-                  <button
-                    onClick={() => handleRecordGoal(awayTeam)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2"
-                  >
-                    <Plus size={20} />
-                    Goal {awayTeam}
-                  </button>
-                </div>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <button
+                  onClick={() => handleRecordGoal(homeTeam)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2"
+                >
+                  <Plus size={20} />
+                  Goal {homeTeam}
+                </button>
+                <button
+                  onClick={() => handleRecordGoal(awayTeam)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2"
+                >
+                  <Plus size={20} />
+                  Goal {awayTeam}
+                </button>
+              </div>
+            )}
 
-                {/* Substitution Button */}
-                <div className="mb-6">
-                  <button
-                    onClick={handleOpenSubstitutions}
-                    className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2"
-                  >
-                    <Users size={20} />
-                    Substitutes
-                  </button>
-                </div>
-              </>
+            {/* Substitution Button - Available after first period starts until match ends */}
+            {matchStarted && !events.some(e => e.type === 'match_end') && (
+              <div className="mb-6">
+                <button
+                  onClick={handleOpenSubstitutions}
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2"
+                >
+                  <Users size={20} />
+                  Substitutes
+                </button>
+              </div>
             )}
 
             {/* Match Events */}
@@ -919,15 +931,6 @@ const MatchTracker = () => {
                 Reset Match
               </button>
             </div>
-
-            {/* About Button */}
-            <button
-              onClick={() => setShowAbout(true)}
-              className="w-full mt-3 bg-gray-700 hover:bg-gray-600 text-gray-100 font-bold py-2 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2"
-            >
-              <Info size={20} />
-              About
-            </button>
           </>
         )}
 
@@ -995,6 +998,7 @@ const MatchTracker = () => {
           onComplete={handleCompleteSubstitutions}
         />
 
+        {/* About Modal */}
         <AboutModal
           isOpen={showAbout}
           onClose={() => setShowAbout(false)}
