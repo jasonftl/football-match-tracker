@@ -456,6 +456,8 @@ const MatchTracker = () => {
         }
         goalLine += ` - ${event.timestamp} [${event.timerValue}]`;
         exportText += goalLine + '\n';
+      } else if (event.type === 'substitution') {
+        exportText += `${event.description} - ${event.timestamp} [${event.timerValue}]\n`;
       } else if (event.type === 'match_end') {
         exportText += `${event.description} - ${event.timestamp} [${event.timerValue}]\n`;
       }
