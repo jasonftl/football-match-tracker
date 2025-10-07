@@ -1,18 +1,59 @@
-// Date: 2025-10-05
+// Date: 2025-10-07
 // Player Setup component for Football Match Tracker
 // Manages team player configuration
 
-import React from 'react';
-import { Play, UserPlus, Trash2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Play, UserPlus, Trash2, RotateCcw } from 'lucide-react';
+import { AGE_GROUPS } from '../constants/ageGroups';
+import Modal from './Modal';
 
-const PlayerSetup = ({ 
-  teamName, 
-  players, 
-  setPlayers, 
-  showNumbers, 
-  setShowNumbers, 
-  onPlayersComplete 
+const PlayerSetup = ({
+  teamName,
+  players,
+  setPlayers,
+  showNumbers,
+  setShowNumbers,
+  ageGroup,
+  onPlayersComplete,
+  onBack
 }) => {
+
+  // State for reset confirmation modal
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [shouldScrollToBottom, setShouldScrollToBottom] = useState(false);
+
+  // Ref for player list container
+  const playerListRef = useRef(null);
+
+  // Get selected age group details
+  const selectedAgeGroup = AGE_GROUPS.find(ag => ag.value === ageGroup);
+
+  // Ensure minimum player count for age group
+  useEffect(() => {
+    if (selectedAgeGroup && players.length < selectedAgeGroup.defaultPlayerCount) {
+      const newPlayers = [...players];
+      const currentMaxNumber = players.length > 0 ? Math.max(...players.map(p => p.number)) : 0;
+
+      // Add missing players
+      for (let i = players.length; i < selectedAgeGroup.defaultPlayerCount; i++) {
+        newPlayers.push({
+          number: currentMaxNumber + (i - players.length + 1),
+          name: '',
+          isSub: false
+        });
+      }
+      setPlayers(newPlayers);
+    }
+  }, [ageGroup, selectedAgeGroup]);
+
+  // Scroll to bottom when new player is added
+  useEffect(() => {
+    if (shouldScrollToBottom && playerListRef.current) {
+      playerListRef.current.scrollTop = playerListRef.current.scrollHeight;
+      setShouldScrollToBottom(false);
+    }
+  }, [players, shouldScrollToBottom]);
+
   
   // Handle player name change
   const handlePlayerNameChange = (index, name) => {
@@ -24,19 +65,56 @@ const PlayerSetup = ({
   // Handle player number change
   const handlePlayerNumberChange = (index, number) => {
     const newPlayers = [...players];
-    newPlayers[index].number = parseInt(number) || 0;
+    newPlayers[index].number = parseInt(number) || '';
+    setPlayers(newPlayers);
+  };
+
+  // Handle sub checkbox change
+  const handleSubChange = (index, isSub) => {
+    const newPlayers = [...players];
+    newPlayers[index].isSub = isSub;
     setPlayers(newPlayers);
   };
 
   // Add new player
   const handleAddPlayer = () => {
     const newNumber = players.length > 0 ? Math.max(...players.map(p => p.number)) + 1 : 1;
-    setPlayers([...players, { number: newNumber, name: '' }]);
+
+    // Count current starting players
+    const startingPlayerCount = players.filter(p => !p.isSub).length;
+
+    // If we already have max starting players, new player should be a sub
+    const shouldBeSub = selectedAgeGroup && startingPlayerCount >= selectedAgeGroup.defaultPlayerCount;
+
+    setPlayers([...players, { number: newNumber, name: '', isSub: shouldBeSub }]);
+    setShouldScrollToBottom(true);
   };
 
   // Remove player
   const handleRemovePlayer = (index) => {
     setPlayers(players.filter((_, i) => i !== index));
+  };
+
+  // Handle reset players click
+  const handleResetPlayersClick = () => {
+    setShowResetConfirm(true);
+  };
+
+  // Confirm reset players
+  const confirmResetPlayers = () => {
+    if (selectedAgeGroup) {
+      const resetPlayers = [];
+      for (let i = 1; i <= selectedAgeGroup.defaultPlayerCount; i++) {
+        resetPlayers.push({ number: i, name: '', isSub: false });
+      }
+      setPlayers(resetPlayers);
+    }
+    setShowResetConfirm(false);
+  };
+
+  // Cancel reset players
+  const cancelResetPlayers = () => {
+    setShowResetConfirm(false);
   };
 
   return (
@@ -45,36 +123,61 @@ const PlayerSetup = ({
         {teamName} Players
       </h2>
 
-      {/* Show Numbers Toggle */}
-      <div className="flex items-center gap-3 mb-4">
-        <label className="text-sm font-medium text-gray-300">
-          Show Player Numbers
-        </label>
-        <button
-          onClick={() => setShowNumbers(!showNumbers)}
-          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-            showNumbers ? 'bg-blue-600' : 'bg-gray-600'
-          }`}
-        >
-          <span
-            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-              showNumbers ? 'translate-x-6' : 'translate-x-1'
+      {/* Player List Header with Show Numbers Toggle */}
+      <div className="flex items-center justify-between mb-4">
+        {/* Left: Sub Toggle Explanation */}
+        <div className="text-sm text-gray-400">
+          Toggle: <span className="text-green-500">Green = Starting</span> | <span className="text-red-500">Red = Sub</span>
+        </div>
+
+        {/* Right: Show Numbers Toggle */}
+        <div className="flex items-center gap-3">
+          <label className="text-sm font-medium text-gray-300">
+            Show Player Numbers
+          </label>
+          <button
+            onClick={() => setShowNumbers(!showNumbers)}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+              showNumbers ? 'bg-blue-600' : 'bg-gray-600'
             }`}
-          />
-        </button>
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                showNumbers ? 'translate-x-6' : 'translate-x-1'
+              }`}
+            />
+          </button>
+        </div>
       </div>
 
       {/* Player List */}
-      <div className="space-y-2 max-h-96 overflow-y-auto">
+      <div ref={playerListRef} className="space-y-2 max-h-96 overflow-y-auto">
         {players.map((player, index) => (
           <div key={index} className="flex gap-2 items-center bg-gray-700 p-3 rounded-lg">
+            {/* Sub Toggle */}
+            <div className="flex items-center">
+              <button
+                onClick={() => handleSubChange(index, !player.isSub)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  player.isSub ? 'bg-red-600' : 'bg-green-600'
+                }`}
+                title={player.isSub ? 'Substitute' : 'Starting'}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    player.isSub ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+
             {showNumbers && (
               <input
                 type="number"
                 value={player.number}
                 onChange={(e) => handlePlayerNumberChange(index, e.target.value)}
                 className="w-16 p-2 bg-gray-600 border border-gray-500 text-gray-100 rounded text-center"
-                min="1"
+                placeholder="#"
               />
             )}
             <input
@@ -103,14 +206,56 @@ const PlayerSetup = ({
         Add Player
       </button>
 
-      {/* Continue Button */}
+      {/* Reset Players Button */}
       <button
-        onClick={onPlayersComplete}
-        className="btn-primary w-full"
+        onClick={handleResetPlayersClick}
+        className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2"
       >
-        <Play size={20} />
-        Proceed to Match Tracker
+        <RotateCcw size={20} />
+        Reset Players
       </button>
+
+      {/* Action Buttons */}
+      <div className="flex gap-2 items-center">
+        <button
+          onClick={onBack}
+          className="btn-secondary"
+        >
+          Back
+        </button>
+        <button
+          onClick={onPlayersComplete}
+          className="btn-primary flex-1"
+        >
+          <Play size={20} />
+          Proceed to Match Tracker
+        </button>
+      </div>
+
+      {/* Reset Confirmation Modal */}
+      <Modal
+        isOpen={showResetConfirm}
+        title="Reset Players?"
+        message={
+          <>
+            Are you sure you want to reset all players?
+            <br />
+            <span className="text-sm text-gray-400 mt-2 block">
+              This will:
+              <ul className="list-disc ml-5 mt-1">
+                <li>Clear all player names</li>
+                <li>Reset to exactly {selectedAgeGroup?.defaultPlayerCount} players for {ageGroup}</li>
+                <li>Mark all players as starting (green)</li>
+              </ul>
+            </span>
+          </>
+        }
+        confirmText="Reset"
+        cancelText="Cancel"
+        confirmStyle="warning"
+        onConfirm={confirmResetPlayers}
+        onCancel={cancelResetPlayers}
+      />
     </div>
   );
 };

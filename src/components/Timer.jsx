@@ -81,7 +81,7 @@ const Timer = ({
           className="btn-danger flex items-center gap-2"
         >
           <Square size={20} />
-          End {getPeriodDisplayName(currentPeriod)}
+          End {currentPeriod}
         </button>
       </div>
     </div>

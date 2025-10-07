@@ -1,15 +1,15 @@
-// Date: 2025-10-05
+// Date: 2025-10-07
 // Match Setup component for Football Match Tracker
 // Handles team selection and match configuration
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Play } from 'lucide-react';
 import { AGE_GROUPS } from '../constants/ageGroups';
 
-const MatchSetup = ({ 
-  isHome, 
-  setIsHome, 
-  ageGroup, 
+const MatchSetup = ({
+  isHome,
+  setIsHome,
+  ageGroup,
   setAgeGroup,
   homeTeam,
   setHomeTeam,
@@ -19,9 +19,18 @@ const MatchSetup = ({
   setUseQuarters,
   periodLength,
   setPeriodLength,
-  onSetupComplete 
+  customPeriods,
+  setCustomPeriods,
+  onSetupComplete
 }) => {
-  
+
+  // Local state for custom format
+  const [isCustomFormat, setIsCustomFormat] = useState(customPeriods !== null);
+  const [localCustomPeriods, setLocalCustomPeriods] = useState(customPeriods || 2);
+
+  // Get selected age group details
+  const selectedAgeGroup = AGE_GROUPS.find(ag => ag.value === ageGroup);
+
   // Handle home/away toggle
   const handleToggleHomeAway = (home) => {
     setIsHome(home);
@@ -41,11 +50,48 @@ const MatchSetup = ({
     if (selectedGroup) {
       setUseQuarters(selectedGroup.defaultQuarters);
       setPeriodLength(selectedGroup.defaultPeriodLength);
+      // Reset custom format when age group changes
+      setIsCustomFormat(false);
     }
   };
 
-  // Get selected age group details
-  const selectedAgeGroup = AGE_GROUPS.find(ag => ag.value === ageGroup);
+  // Handle format change
+  const handleFormatChange = (value) => {
+    if (value === 'custom') {
+      setIsCustomFormat(true);
+      // Default to 2 periods when switching to custom
+      const defaultPeriods = 2;
+      setLocalCustomPeriods(defaultPeriods);
+      setCustomPeriods(defaultPeriods);
+      if (selectedAgeGroup) {
+        setPeriodLength(selectedAgeGroup.totalTime / defaultPeriods);
+        setUseQuarters(false);
+      }
+    } else {
+      setIsCustomFormat(false);
+      setCustomPeriods(null); // Clear custom periods
+      const newUseQuarters = value === 'quarters';
+      setUseQuarters(newUseQuarters);
+      if (selectedAgeGroup) {
+        if (newUseQuarters) {
+          setPeriodLength(selectedAgeGroup.totalTime / 4);
+        } else {
+          setPeriodLength(selectedAgeGroup.totalTime / 2);
+        }
+      }
+    }
+  };
+
+  // Handle custom periods change
+  const handleCustomPeriodsChange = (numPeriods) => {
+    setLocalCustomPeriods(numPeriods);
+    setCustomPeriods(numPeriods);
+    if (selectedAgeGroup) {
+      setPeriodLength(selectedAgeGroup.totalTime / numPeriods);
+    }
+    // Update useQuarters based on periods
+    setUseQuarters(numPeriods === 4);
+  };
 
   return (
     <div className="space-y-4 mb-6">
@@ -75,67 +121,94 @@ const MatchSetup = ({
         </div>
       </div>
 
-      {/* Age Group Selection */}
-      <div>
-        <label className="block text-sm font-medium text-gray-300 mb-2">
-          Age Group
-        </label>
-        <select
-          value={ageGroup}
-          onChange={(e) => handleAgeGroupChange(e.target.value)}
-          className="input-field"
-        >
-          {AGE_GROUPS.map((ag) => (
-            <option key={ag.value} value={ag.value}>
-              {ag.label} - {ag.totalTime} min ({ag.defaultQuarters ? '4 × ' + ag.defaultPeriodLength + ' min quarters' : '2 × ' + ag.defaultPeriodLength + ' min halves'})
-            </option>
-          ))}
-        </select>
+      {/* Age Group and Match Format */}
+      <div className="grid grid-cols-2 gap-2">
+        {/* Age Group Selection */}
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-2">
+            Age
+          </label>
+          <select
+            value={ageGroup}
+            onChange={(e) => handleAgeGroupChange(e.target.value)}
+            className="input-field"
+          >
+            {AGE_GROUPS.map((ag) => (
+              <option key={ag.value} value={ag.value}>
+                {ag.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Match Format */}
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-2">
+            Format
+          </label>
+          <select
+            value={isCustomFormat ? 'custom' : (useQuarters ? 'quarters' : 'halves')}
+            onChange={(e) => handleFormatChange(e.target.value)}
+            className="input-field"
+          >
+            {selectedAgeGroup && (
+              <>
+                {/* Show quarters option for U12 and below */}
+                {!['U13', 'U14', 'U15', 'U16', 'U17', 'U18', 'Adult'].includes(selectedAgeGroup.value) && (
+                  <option value="quarters">
+                    4 × {selectedAgeGroup.totalTime / 4} min
+                  </option>
+                )}
+                {/* Always show halves option */}
+                <option value="halves">
+                  2 × {selectedAgeGroup.totalTime / 2} min
+                </option>
+                {/* Always show custom option */}
+                <option value="custom">
+                  Custom
+                </option>
+              </>
+            )}
+          </select>
+        </div>
       </div>
 
-      {/* Match Format */}
-      <div>
-        <label className="block text-sm font-medium text-gray-300 mb-2">
-          Match Format
-        </label>
-        <select
-          value={useQuarters ? 'quarters' : 'halves'}
-          onChange={(e) => {
-            const newUseQuarters = e.target.value === 'quarters';
-            setUseQuarters(newUseQuarters);
-            if (selectedAgeGroup) {
-              if (newUseQuarters) {
-                setPeriodLength(selectedAgeGroup.totalTime / 4);
-              } else {
-                setPeriodLength(selectedAgeGroup.totalTime / 2);
-              }
-            }
-          }}
-          className="input-field"
-        >
-          <option value="quarters">Quarters (4 periods)</option>
-          <option value="halves">Halves (2 periods)</option>
-        </select>
-      </div>
+      {/* Custom Format Options */}
+      {isCustomFormat && (
+        <div className="grid grid-cols-2 gap-2">
+          {/* Periods */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Periods
+            </label>
+            <select
+              value={localCustomPeriods}
+              onChange={(e) => handleCustomPeriodsChange(parseInt(e.target.value))}
+              className="input-field"
+            >
+              <option value={1}>1</option>
+              <option value={2}>2</option>
+              <option value={4}>4</option>
+            </select>
+          </div>
 
-      {/* Period Length */}
-      <div>
-        <label className="block text-sm font-medium text-gray-300 mb-2">
-          Period Length (minutes)
-        </label>
-        <input
-          type="number"
-          value={periodLength}
-          onChange={(e) => setPeriodLength(parseFloat(e.target.value) || 0)}
-          step="0.5"
-          min="1"
-          max="90"
-          className="input-field"
-        />
-        <p className="text-sm text-gray-400 mt-1">
-          Total match time: {useQuarters ? periodLength * 4 : periodLength * 2} minutes
-        </p>
-      </div>
+          {/* Period Length */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Period Length (min)
+            </label>
+            <input
+              type="number"
+              value={periodLength}
+              onChange={(e) => setPeriodLength(parseFloat(e.target.value) || 0)}
+              step="0.5"
+              min="1"
+              max="90"
+              className="input-field"
+            />
+          </div>
+        </div>
+      )}
 
       {/* Home Team Name */}
       <div>
