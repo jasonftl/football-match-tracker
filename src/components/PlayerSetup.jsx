@@ -3,9 +3,10 @@
 // Manages team player configuration
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, UserPlus, Trash2, RotateCcw } from 'lucide-react';
+import { Play, UserPlus, Trash2, RotateCcw, Info } from 'lucide-react';
 import { AGE_GROUPS } from '../constants/ageGroups';
 import Modal from './Modal';
+import AboutModal from './AboutModal';
 
 const PlayerSetup = ({
   teamName,
@@ -21,6 +22,7 @@ const PlayerSetup = ({
   // State for reset confirmation modal
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [shouldScrollToBottom, setShouldScrollToBottom] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
 
   // Ref for player list container
   const playerListRef = useRef(null);
@@ -232,6 +234,15 @@ const PlayerSetup = ({
         </button>
       </div>
 
+      {/* About Button */}
+      <button
+        onClick={() => setShowAbout(true)}
+        className="w-full mt-3 bg-gray-700 hover:bg-gray-600 text-gray-100 font-bold py-2 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2"
+      >
+        <Info size={20} />
+        About
+      </button>
+
       {/* Reset Confirmation Modal */}
       <Modal
         isOpen={showResetConfirm}
@@ -255,6 +266,12 @@ const PlayerSetup = ({
         confirmStyle="warning"
         onConfirm={confirmResetPlayers}
         onCancel={cancelResetPlayers}
+      />
+
+      {/* About Modal */}
+      <AboutModal
+        isOpen={showAbout}
+        onClose={() => setShowAbout(false)}
       />
     </div>
   );

@@ -278,8 +278,11 @@ Match End - 15:10:00 [40:00]
 
 ## License
 
+This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
+
 © 2025 - All rights reserved
 
 ## Support
 
-For issues or questions, please check the requirements document in `dev/requirements.md` or contact the development team.
+For questions or feedback, please open an issue in the repo:
+https://github.com/jasonftl/football-match-tracker

@@ -3,12 +3,13 @@
 // Uses modular components for better maintainability
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Download, Edit2, Trash2, Save, X, Play, Users } from 'lucide-react';
+import { Plus, Download, Edit2, Trash2, Save, X, Play, Users, Info } from 'lucide-react';
 import MatchSetup from './MatchSetup';
 import PlayerSetup from './PlayerSetup';
 import Timer from './Timer';
 import Modal from './Modal';
 import SubstitutionModal from './SubstitutionModal';
+import AboutModal from './AboutModal';
 import { AGE_GROUPS } from '../constants/ageGroups';
 import {
   formatTime,
@@ -27,6 +28,7 @@ const MatchTracker = () => {
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showEndPeriodConfirm, setShowEndPeriodConfirm] = useState(false);
   const [showSubstitutionModal, setShowSubstitutionModal] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
 
   // State for match configuration
   const [ageGroup, setAgeGroup] = useState('U7');
@@ -917,6 +919,15 @@ const MatchTracker = () => {
                 Reset Match
               </button>
             </div>
+
+            {/* About Button */}
+            <button
+              onClick={() => setShowAbout(true)}
+              className="w-full mt-3 bg-gray-700 hover:bg-gray-600 text-gray-100 font-bold py-2 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2"
+            >
+              <Info size={20} />
+              About
+            </button>
           </>
         )}
 
@@ -982,6 +993,11 @@ const MatchTracker = () => {
           awayGoals={awayGoals.length}
           onClose={handleCloseSubstitutions}
           onComplete={handleCompleteSubstitutions}
+        />
+
+        <AboutModal
+          isOpen={showAbout}
+          onClose={() => setShowAbout(false)}
         />
       </div>
     </div>
