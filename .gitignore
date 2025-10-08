@@ -8,9 +8,11 @@
 .backup/
 .claude/
 .claudeignore
+.dev/
+dev-dist/
+dist/
 node_modules/
 scripts/
-dev/
 
 # ============================================
 # Ghost Ledger
