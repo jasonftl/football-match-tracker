@@ -3,19 +3,20 @@
 # ============================================
 
 # ============================================
-# Manual Entries
+# Manual Directory Entries
 # ============================================
 .backup/
 .claude/
-.claudeignore
 .dev/
-dev-dist/
-dist/
 node_modules/
-scripts/
 
 # ============================================
-# Ghost Ledger
+# Manual File Entries
+# ============================================
+.claudeignore
+
+# ============================================
+# Grey Ledger
 # ============================================
 /home/jasonftl/Bank.txt
 /home/jasonftl/Mail.txt
