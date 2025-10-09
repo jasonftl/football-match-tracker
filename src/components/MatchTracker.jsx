@@ -576,20 +576,18 @@ const MatchTracker = () => {
   return (
     <div className="min-h-screen bg-gray-900 p-4">
       <div className="max-w-2xl mx-auto bg-gray-800 rounded-lg shadow-lg p-6">
-        {/* Header with About button (only shown on first screen) */}
+        {/* Header with About button */}
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold text-orange-500">
             Football Match Tracker
           </h1>
-          {!setupComplete && (
-            <button
-              onClick={() => setShowAbout(true)}
-              className="text-gray-400 hover:text-orange-500 transition duration-200"
-              title="About"
-            >
-              <Info size={24} />
-            </button>
-          )}
+          <button
+            onClick={() => setShowAbout(true)}
+            className="text-gray-400 hover:text-orange-500 transition duration-200"
+            title="About"
+          >
+            <Info size={24} />
+          </button>
         </div>
 
         {/* Match Setup Screen */}
