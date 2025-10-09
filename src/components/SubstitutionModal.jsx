@@ -117,48 +117,50 @@ const SubstitutionModal = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
-      <div className="bg-gray-800 rounded-lg p-6 max-w-4xl w-full border border-gray-700 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-3 sm:p-4 z-50">
+      <div className="bg-gray-800 rounded-lg p-4 sm:p-6 max-w-4xl w-full border border-gray-700 max-h-[90vh] overflow-y-auto">
 
         {!showConfirmation ? (
           <>
             {/* Header */}
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-2xl font-bold text-orange-500">
+            <div className="flex justify-between items-center mb-4 sm:mb-6">
+              <h3 className="text-lg sm:text-2xl font-bold text-orange-500">
                 Manage Substitutions
               </h3>
               <button
                 onClick={onClose}
                 className="text-gray-400 hover:text-gray-200 p-2"
               >
-                <X size={24} />
+                <X size={20} className="sm:hidden" />
+                <X size={24} className="hidden sm:block" />
               </button>
             </div>
 
             {/* Header Row */}
-            <div className="grid grid-cols-[1fr_auto_1fr] gap-4 mb-3">
-              <h4 className="text-lg font-bold text-green-500 text-center flex items-center justify-center gap-2">
+            <div className="grid grid-cols-[1fr_auto_1fr] gap-2 sm:gap-4 mb-3">
+              <h4 className="text-xs sm:text-lg font-bold text-green-500 text-center flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2">
                 <span>
                   Playing ({startingPlayers.length}/{defaultPlayerCount}
-                  {powerPlayBonus > 0 && ` + ${powerPlayBonus} power play`})
+                  {powerPlayBonus > 0 && ` + ${powerPlayBonus}`})
                 </span>
-                {showCaution && <AlertTriangle size={20} className="text-yellow-500" />}
+                {showCaution && <AlertTriangle size={16} className="sm:hidden text-yellow-500" />}
+                {showCaution && <AlertTriangle size={20} className="hidden sm:block text-yellow-500" />}
               </h4>
-              <div className="w-14"></div>
-              <h4 className="text-lg font-bold text-red-500 text-center">
-                Substitutes bench ({substitutePlayers.length})
+              <div className="w-10 sm:w-14"></div>
+              <h4 className="text-xs sm:text-lg font-bold text-red-500 text-center">
+                Subs ({substitutePlayers.length})
               </h4>
             </div>
 
             {/* Player Rows */}
-            <div className="space-y-2 max-h-96 overflow-y-auto mb-6">
+            <div className="space-y-2 max-h-96 overflow-y-auto mb-4 sm:mb-6">
               {workingPlayers.map((player, index) => (
-                <div key={index} className="grid grid-cols-[1fr_auto_1fr] gap-4 items-center">
+                <div key={index} className="grid grid-cols-[1fr_auto_1fr] gap-2 sm:gap-4 items-center">
                   {/* Left - Starting Player or Empty */}
                   <div>
                     {!player.isSub ? (
-                      <div className="bg-gray-700 p-3 rounded-lg">
-                        <span className="text-gray-100">
+                      <div className="bg-gray-700 p-2 sm:p-3 rounded-lg">
+                        <span className="text-xs sm:text-base text-gray-100 truncate block">
                           {showNumbers && player.number ? `#${player.number} ` : ''}
                           {player.name || `Player ${player.number}`}
                         </span>
@@ -172,17 +174,18 @@ const SubstitutionModal = ({
                   <div className="flex items-center justify-center">
                     <button
                       onClick={() => handleTogglePlayer(index)}
-                      className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${
+                      className={`relative inline-flex h-7 w-12 sm:h-8 sm:w-14 items-center rounded-full transition-colors ${
                         player.isSub ? 'bg-red-600' : 'bg-green-600'
                       }`}
                       title={player.isSub ? 'Move to Starting' : 'Move to Substitutes'}
                     >
                       <span
-                        className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform flex items-center justify-center ${
-                          player.isSub ? 'translate-x-7' : 'translate-x-1'
+                        className={`inline-block h-5 w-5 sm:h-6 sm:w-6 transform rounded-full bg-white transition-transform flex items-center justify-center ${
+                          player.isSub ? 'translate-x-6 sm:translate-x-7' : 'translate-x-1'
                         }`}
                       >
-                        <RefreshCw size={12} className="text-gray-800" />
+                        <RefreshCw size={10} className="sm:hidden text-gray-800" />
+                        <RefreshCw size={12} className="hidden sm:block text-gray-800" />
                       </span>
                     </button>
                   </div>
@@ -190,8 +193,8 @@ const SubstitutionModal = ({
                   {/* Right - Substitute Player or Empty */}
                   <div>
                     {player.isSub ? (
-                      <div className="bg-gray-700 p-3 rounded-lg">
-                        <span className="text-gray-100">
+                      <div className="bg-gray-700 p-2 sm:p-3 rounded-lg">
+                        <span className="text-xs sm:text-base text-gray-100 truncate block">
                           {showNumbers && player.number ? `#${player.number} ` : ''}
                           {player.name || `Player ${player.number}`}
                         </span>
@@ -205,26 +208,26 @@ const SubstitutionModal = ({
             </div>
 
             {/* Action Buttons */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2 sm:gap-3">
               <button
                 onClick={onClose}
-                className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-lg transition duration-200"
+                className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2.5 sm:py-3 px-3 sm:px-6 rounded-lg transition duration-200 text-sm sm:text-base"
               >
                 Cancel
               </button>
               <button
                 onClick={handleCompleteClick}
-                className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-6 rounded-lg transition duration-200"
+                className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2.5 sm:py-3 px-3 sm:px-6 rounded-lg transition duration-200 text-sm sm:text-base"
               >
-                Complete Substitutes
+                Complete
               </button>
             </div>
           </>
         ) : (
           <>
             {/* Confirmation View */}
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-2xl font-bold text-orange-500">
+            <div className="flex justify-between items-center mb-4 sm:mb-6">
+              <h3 className="text-lg sm:text-2xl font-bold text-orange-500">
                 Confirm Substitutions
               </h3>
             </div>
@@ -274,22 +277,22 @@ const SubstitutionModal = ({
             </div>
 
             {/* Action Buttons */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
               <button
                 onClick={handleConfirm}
-                className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200"
+                className="bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 sm:py-3 px-2 sm:px-4 rounded-lg transition duration-200 text-sm sm:text-base"
               >
                 Confirm
               </button>
               <button
                 onClick={handleEdit}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200"
+                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 sm:py-3 px-2 sm:px-4 rounded-lg transition duration-200 text-sm sm:text-base"
               >
                 Edit
               </button>
               <button
                 onClick={handleCancelConfirmation}
-                className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200"
+                className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2.5 sm:py-3 px-2 sm:px-4 rounded-lg transition duration-200 text-sm sm:text-base"
               >
                 Cancel
               </button>

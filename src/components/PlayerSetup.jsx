@@ -3,7 +3,7 @@
 // Manages team player configuration
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, UserPlus, Trash2, RotateCcw } from 'lucide-react';
+import { Play, UserPlus, Trash2, RotateCcw, AlertTriangle } from 'lucide-react';
 import { AGE_GROUPS } from '../constants/ageGroups';
 import Modal from './Modal';
 
@@ -27,6 +27,11 @@ const PlayerSetup = ({
 
   // Get selected age group details
   const selectedAgeGroup = AGE_GROUPS.find(ag => ag.value === ageGroup);
+
+  // Calculate player counts
+  const startingPlayerCount = players.filter(p => !p.isSub).length;
+  const substitutePlayerCount = players.filter(p => p.isSub).length;
+  const showCaution = selectedAgeGroup && startingPlayerCount !== selectedAgeGroup.defaultPlayerCount;
 
   // Ensure minimum player count for age group
   useEffect(() => {
@@ -119,21 +124,24 @@ const PlayerSetup = ({
 
   return (
     <div className="space-y-4 mb-6">
-      <h2 className="text-2xl font-bold text-orange-500 mb-4">
+      <h2 className="text-xl sm:text-2xl font-bold text-orange-500 mb-4">
         {teamName} Players
       </h2>
 
       {/* Player List Header with Show Numbers Toggle */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 mb-4">
         {/* Left: Sub Toggle Explanation */}
-        <div className="text-sm text-gray-400">
-          Toggle: <span className="text-green-500">Green = Starting</span> | <span className="text-red-500">Red = Sub</span>
+        <div className="text-xs sm:text-sm text-gray-400 flex items-center gap-2">
+          <span>
+            <span className="text-green-500">Green = Starting ({startingPlayerCount})</span> | <span className="text-red-500">Red = Sub ({substitutePlayerCount})</span>
+          </span>
+          {showCaution && <AlertTriangle size={16} className="text-yellow-500" />}
         </div>
 
         {/* Right: Show Numbers Toggle */}
-        <div className="flex items-center gap-3">
-          <label className="text-sm font-medium text-gray-300">
-            Show Player Numbers
+        <div className="flex items-center gap-2 sm:gap-3">
+          <label className="text-xs sm:text-sm font-medium text-gray-300 whitespace-nowrap">
+            Show Numbers
           </label>
           <button
             onClick={() => setShowNumbers(!showNumbers)}

@@ -7,6 +7,8 @@ import { Play } from 'lucide-react';
 import { AGE_GROUPS } from '../constants/ageGroups';
 
 const MatchSetup = ({
+  isManager,
+  setIsManager,
   isHome,
   setIsHome,
   ageGroup,
@@ -95,6 +97,32 @@ const MatchSetup = ({
 
   return (
     <div className="space-y-4 mb-6">
+      {/* Referee/Manager Toggle */}
+      <div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setIsManager(false)}
+            className={`flex-1 font-bold py-3 px-6 rounded-lg transition duration-200 ${
+              !isManager
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+            }`}
+          >
+            Referee
+          </button>
+          <button
+            onClick={() => setIsManager(true)}
+            className={`flex-1 font-bold py-3 px-6 rounded-lg transition duration-200 ${
+              isManager
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+            }`}
+          >
+            Manager
+          </button>
+        </div>
+      </div>
+
       {/* Home/Away Toggle */}
       <div>
         <div className="flex gap-2">
@@ -244,7 +272,7 @@ const MatchSetup = ({
         className="btn-primary w-full"
       >
         <Play size={20} />
-        Continue to Player Setup
+        {isManager ? 'Continue to Player Setup' : 'Start Match Tracker'}
       </button>
     </div>
   );

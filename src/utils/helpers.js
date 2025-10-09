@@ -48,7 +48,7 @@ export const getCumulativeTime = (currentPeriod, elapsedTime, periodLength) => {
 
 /**
  * Calculate match minute from timer value and period
- * @param {string} timerValue - Timer value in MM:SS format
+ * @param {string} timerValue - Timer value in MM:SS format (cumulative time)
  * @param {string} period - Period code
  * @param {number} periodLength - Length of each period in minutes
  * @returns {number} Match minute (1-indexed)
@@ -58,19 +58,24 @@ export const calculateMatchMinute = (timerValue, period, periodLength) => {
   const minutes = parseInt(timeParts[0]);
   const seconds = parseInt(timeParts[1]);
   const elapsedSeconds = (minutes * 60) + seconds;
-  const periodMinute = elapsedSeconds > 0 ? Math.floor(elapsedSeconds / 60) + 1 : 1;
 
+  // Calculate match minute directly from cumulative time (timerValue is already cumulative)
+  const matchMinute = elapsedSeconds > 0 ? Math.floor(elapsedSeconds / 60) + 1 : 1;
+
+  // Calculate maximum minute for the period to cap overtime goals
   let previousMinutes = 0;
   if (period === 'Q2') previousMinutes = periodLength;
   else if (period === 'Q3') previousMinutes = periodLength * 2;
   else if (period === 'Q4') previousMinutes = periodLength * 3;
   else if (period === 'H2') previousMinutes = periodLength;
 
-  let matchMinute = previousMinutes + periodMinute;
   const maxMinuteForPeriod = previousMinutes + periodLength;
+
+  // Cap at period end time if in overtime
   if (matchMinute > maxMinuteForPeriod) {
-    matchMinute = maxMinuteForPeriod;
+    return maxMinuteForPeriod;
   }
+
   return matchMinute;
 };
 

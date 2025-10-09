@@ -9,6 +9,7 @@ import PlayerSetup from './PlayerSetup';
 import Timer from './Timer';
 import Modal from './Modal';
 import SubstitutionModal from './SubstitutionModal';
+import GoalScorerModal from './GoalScorerModal';
 import AboutModal from './AboutModal';
 import { AGE_GROUPS } from '../constants/ageGroups';
 import {
@@ -29,6 +30,9 @@ const MatchTracker = () => {
   const [showEndPeriodConfirm, setShowEndPeriodConfirm] = useState(false);
   const [showSubstitutionModal, setShowSubstitutionModal] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
+  const [showGoalScorerModal, setShowGoalScorerModal] = useState(false);
+  const [pendingGoalTeam, setPendingGoalTeam] = useState(null);
+  const [pendingGoalPeriod, setPendingGoalPeriod] = useState(null);
 
   // State for match configuration
   const [ageGroup, setAgeGroup] = useState('U7');
@@ -41,6 +45,7 @@ const MatchTracker = () => {
   const [periodLength, setPeriodLength] = useState(10);
   const [isHome, setIsHome] = useState(true);
   const [customPeriods, setCustomPeriods] = useState(null);
+  const [isManager, setIsManager] = useState(true);
 
   // State for player management
   const [players, setPlayers] = useState([]);
@@ -82,6 +87,7 @@ const MatchTracker = () => {
       setPeriodStarted(data.periodStarted || false);
       setShowNumbers(data.showNumbers !== undefined ? data.showNumbers : true);
       setCustomPeriods(data.customPeriods || null);
+      setIsManager(data.isManager !== undefined ? data.isManager : true);
     }
 
     if (savedPlayers) {
@@ -107,9 +113,10 @@ const MatchTracker = () => {
       periodStarted,
       showNumbers,
       customPeriods,
+      isManager,
     };
     localStorage.setItem('footballMatchData', JSON.stringify(data));
-  }, [ageGroup, homeTeam, awayTeam, setupComplete, playersConfigured, matchStarted, currentPeriod, elapsedTime, events, useQuarters, periodLength, isHome, periodStarted, showNumbers, customPeriods]);
+  }, [ageGroup, homeTeam, awayTeam, setupComplete, playersConfigured, matchStarted, currentPeriod, elapsedTime, events, useQuarters, periodLength, isHome, periodStarted, showNumbers, customPeriods, isManager]);
 
   // Save players to localStorage
   useEffect(() => {
@@ -153,7 +160,15 @@ const MatchTracker = () => {
       return;
     }
 
-    // Initialize players if not already done
+    // If Referee mode, skip player setup and go straight to match
+    if (!isManager) {
+      setSetupComplete(true);
+      setPlayersConfigured(true);
+      setMatchStarted(true);
+      return;
+    }
+
+    // Manager mode: Initialize players if not already done
     if (players.length === 0 && selectedAgeGroup) {
       const defaultPlayers = [];
       for (let i = 1; i <= selectedAgeGroup.defaultPlayerCount; i++) {
@@ -271,7 +286,7 @@ const MatchTracker = () => {
   };
 
   // Goal handlers
-  const handleRecordGoal = (team, targetPeriod = null) => {
+  const handleRecordGoal = (team, targetPeriod = null, scorerInfo = null) => {
     const periodToUse = targetPeriod || currentPeriod;
 
     let previousMinutes = 0;
@@ -290,9 +305,9 @@ const MatchTracker = () => {
       timestamp: getCurrentTimestamp(),
       timerValue: formatTime(cumulativeTime),
       description: `Goal - ${team}`,
-      playerNumber: null,
-      playerName: null,
-      isPenalty: false,
+      playerNumber: scorerInfo?.playerNumber || null,
+      playerName: scorerInfo?.playerName || null,
+      isPenalty: scorerInfo?.isPenalty || false,
     };
 
     const periodEndIndex = events.findIndex(
@@ -438,6 +453,48 @@ const MatchTracker = () => {
     setMissedGoalPeriod(null);
   };
 
+  // Goal scorer modal handlers
+  const handleGoalClick = (team) => {
+    const userTeam = isHome ? homeTeam : awayTeam;
+
+    // If Referee mode, always record directly without showing modal
+    if (!isManager) {
+      handleRecordGoal(team);
+      return;
+    }
+
+    // Manager mode: If it's the user's team, show scorer selection modal
+    if (team === userTeam) {
+      setPendingGoalTeam(team);
+      setPendingGoalPeriod(currentPeriod);
+      setShowGoalScorerModal(true);
+    } else {
+      // Opposition goal - record directly
+      handleRecordGoal(team);
+    }
+  };
+
+  const handleGoalScorerSelect = (scorerInfo) => {
+    if (scorerInfo) {
+      // Record goal with scorer info
+      handleRecordGoal(pendingGoalTeam, pendingGoalPeriod, scorerInfo);
+    } else {
+      // No scorer selected - record without scorer
+      handleRecordGoal(pendingGoalTeam, pendingGoalPeriod, null);
+    }
+
+    // Close modal and reset state
+    setShowGoalScorerModal(false);
+    setPendingGoalTeam(null);
+    setPendingGoalPeriod(null);
+  };
+
+  const handleCloseGoalScorerModal = () => {
+    setShowGoalScorerModal(false);
+    setPendingGoalTeam(null);
+    setPendingGoalPeriod(null);
+  };
+
   // Export handler
   const handleExport = () => {
     const homeGoals = events.filter(e => e.type === 'goal' && e.team === homeTeam);
@@ -445,14 +502,190 @@ const MatchTracker = () => {
 
     let exportText = `${homeTeam} ${homeGoals.length}–${awayGoals.length} ${awayTeam}\n\n`;
 
+    // Helper function to convert timerValue (MM:SS) to seconds
+    const timeToSeconds = (timerValue) => {
+      const parts = timerValue.split(':');
+      return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+    };
+
+    // Get match end time (in seconds)
+    const matchEndEvent = events.find(e => e.type === 'match_end');
+    const matchEndSeconds = matchEndEvent ? timeToSeconds(matchEndEvent.timerValue) :
+      (events.filter(e => e.type === 'period_end').length * periodLength * 60);
+
+    // Determine if player started match based on substitution events
+    const didPlayerStart = (playerNumber) => {
+      const subEvents = events
+        .filter(e => e.type === 'substitution' && e.playerNumber === playerNumber)
+        .sort((a, b) => timeToSeconds(a.timerValue) - timeToSeconds(b.timerValue));
+
+      if (subEvents.length === 0) {
+        // No sub events - assume they started if they have any events
+        return true;
+      }
+
+      // If first event is SUB OFF, they started on the pitch
+      return subEvents[0].subType === 'off';
+    };
+
+    // Calculate time on pitch for each player
+    const calculatePlayerMinutes = (playerNumber) => {
+      const player = players.find(p => p.number === playerNumber);
+      if (!player) return 0;
+
+      // Get all substitution events for this player
+      const subEvents = events
+        .filter(e => e.type === 'substitution' && e.playerNumber === playerNumber)
+        .sort((a, b) => timeToSeconds(a.timerValue) - timeToSeconds(b.timerValue));
+
+      let totalSeconds = 0;
+      let currentlyOn = didPlayerStart(playerNumber); // Check if player started
+      let onTime = 0;
+
+      if (currentlyOn) {
+        onTime = 0; // Started at match start
+      }
+
+      // Process each substitution event
+      subEvents.forEach(event => {
+        const eventTime = timeToSeconds(event.timerValue);
+
+        if (event.subType === 'on') {
+          currentlyOn = true;
+          onTime = eventTime;
+        } else if (event.subType === 'off') {
+          if (currentlyOn) {
+            totalSeconds += eventTime - onTime;
+            currentlyOn = false;
+          }
+        }
+      });
+
+      // If still on at match end, add remaining time
+      if (currentlyOn) {
+        totalSeconds += matchEndSeconds - onTime;
+      }
+
+      return Math.round(totalSeconds / 60); // Convert to minutes
+    };
+
+    // Determine initial starting lineup and substitutes based on substitution events
+    const determineInitialStatus = (playerNumber) => {
+      const playerSubEvents = events
+        .filter(e => e.type === 'substitution' && e.playerNumber === playerNumber)
+        .sort((a, b) => timeToSeconds(a.timerValue) - timeToSeconds(b.timerValue));
+
+      if (playerSubEvents.length === 0) {
+        // No substitution events - check if they have playing time
+        const minutes = calculatePlayerMinutes(playerNumber);
+        return minutes > 0 ? 'starting' : 'unused';
+      }
+
+      // Check first substitution event
+      const firstEvent = playerSubEvents[0];
+      if (firstEvent.subType === 'off') {
+        return 'starting'; // Was on pitch to be subbed off
+      } else {
+        return 'substitute'; // First event was coming on
+      }
+    };
+
+    // Get goals for a specific player
+    const getPlayerGoals = (playerNumber) => {
+      const userTeam = isHome ? homeTeam : awayTeam;
+      return events.filter(e =>
+        e.type === 'goal' &&
+        e.team === userTeam &&
+        e.playerNumber === playerNumber
+      );
+    };
+
+    // Format goal stats for a player
+    const formatPlayerGoalStats = (playerNumber) => {
+      const playerGoals = getPlayerGoals(playerNumber);
+      if (playerGoals.length === 0) return '';
+
+      const goalMinutes = playerGoals.map(g => {
+        const minute = calculateMatchMinute(g.timerValue, g.period, periodLength);
+        return g.isPenalty ? `${minute}'(pen)` : `${minute}'`;
+      });
+
+      const goalCount = playerGoals.length;
+      const goalText = goalCount === 1 ? 'goal' : 'goals';
+      return ` (${goalCount} ${goalText} @ ${goalMinutes.join(', ')})`;
+    };
+
+    // Separate players by their initial status
+    const startingPlayers = [];
+    const substitutePlayers = [];
+
+    players.forEach(player => {
+      const status = determineInitialStatus(player.number);
+      if (status === 'starting') {
+        startingPlayers.push(player);
+      } else if (status === 'substitute' || status === 'unused') {
+        substitutePlayers.push(player);
+      }
+    });
+
+    // Add Starting Lineup (Manager mode only)
+    if (isManager && startingPlayers.length > 0) {
+      exportText += 'Starting Lineup:\n';
+      startingPlayers.forEach(player => {
+        const minutes = calculatePlayerMinutes(player.number);
+        const playerName = player.name || `Player ${player.number}`;
+        const numberPrefix = showNumbers && player.number ? `#${player.number} ` : '';
+        const goalStats = formatPlayerGoalStats(player.number);
+
+        if (minutes > 0) {
+          exportText += `${numberPrefix}${playerName} (played ${minutes}')${goalStats}\n`;
+        } else {
+          exportText += `${numberPrefix}${playerName}${goalStats}\n`;
+        }
+      });
+      exportText += '\n';
+    }
+
+    // Add Substitutes (Manager mode only)
+    if (isManager && substitutePlayers.length > 0) {
+      exportText += 'Substitutes:\n';
+      substitutePlayers.forEach(player => {
+        const minutes = calculatePlayerMinutes(player.number);
+        const playerName = player.name || `Player ${player.number}`;
+        const numberPrefix = showNumbers && player.number ? `#${player.number} ` : '';
+        const goalStats = formatPlayerGoalStats(player.number);
+
+        if (minutes > 0) {
+          exportText += `${numberPrefix}${playerName} (played ${minutes}')${goalStats}\n`;
+        } else {
+          exportText += `${numberPrefix}${playerName}${goalStats}\n`;
+        }
+      });
+      exportText += '\n';
+    }
+
+    // Add Match Events
     events.forEach(event => {
       if (event.type === 'period_start' || event.type === 'period_end') {
         exportText += `${event.description} - ${event.timestamp} [${event.timerValue}]\n`;
       } else if (event.type === 'goal') {
         let goalLine = `${event.description}`;
-        if (event.playerName) {
-          goalLine += ` (${showNumbers && event.playerNumber ? `#${event.playerNumber} ` : ''}${event.playerName})`;
+
+        // Show player name if available (look up from players array if needed)
+        if (event.playerNumber) {
+          let playerName = event.playerName;
+
+          // If playerName is missing but we have playerNumber, look it up
+          if (!playerName) {
+            const player = players.find(p => p.number === event.playerNumber);
+            playerName = player ? (player.name || `Player ${player.number}`) : null;
+          }
+
+          if (playerName) {
+            goalLine += ` (${showNumbers && event.playerNumber ? `#${event.playerNumber} ` : ''}${playerName})`;
+          }
         }
+
         if (event.isPenalty) {
           goalLine += ` (Penalty)`;
         }
@@ -488,14 +721,41 @@ const MatchTracker = () => {
     // Update player statuses
     setPlayers(updatedPlayers);
 
+    // Calculate cumulative time for substitution event
+    let cumulativeTime = 0;
+    let periodForSub = currentPeriod;
+
+    if (currentPeriod) {
+      // During a period - calculate cumulative time
+      let previousMinutes = 0;
+      if (currentPeriod === 'Q2') previousMinutes = periodLength;
+      else if (currentPeriod === 'Q3') previousMinutes = periodLength * 2;
+      else if (currentPeriod === 'Q4') previousMinutes = periodLength * 3;
+      else if (currentPeriod === 'H2') previousMinutes = periodLength;
+      else if (currentPeriod === 'P1') previousMinutes = 0;
+
+      cumulativeTime = (previousMinutes * 60) + elapsedTime;
+    } else {
+      // Between periods - find the last completed period and use its end time
+      const completedPeriods = events.filter(e => e.type === 'period_end');
+      if (completedPeriods.length > 0) {
+        const lastPeriodEnd = completedPeriods[completedPeriods.length - 1];
+        periodForSub = lastPeriodEnd.period;
+
+        // Parse the timerValue from the period end event
+        const timerParts = lastPeriodEnd.timerValue.split(':');
+        cumulativeTime = (parseInt(timerParts[0]) * 60) + parseInt(timerParts[1]);
+      }
+    }
+
     // Create substitution events
     changes.forEach((change) => {
       const substitutionEvent = {
         id: Date.now() + Math.random(), // Ensure unique IDs
         type: 'substitution',
-        period: currentPeriod,
+        period: periodForSub,
         timestamp: getCurrentTimestamp(),
-        timerValue: formatTime((elapsedTime)),
+        timerValue: formatTime(cumulativeTime),
         description: change.from === 'starting'
           ? `SUB OFF: ${showNumbers && change.player.number ? `#${change.player.number} ` : ''}${change.player.name || `Player ${change.player.number}`}`
           : `SUB ON: ${showNumbers && change.player.number ? `#${change.player.number} ` : ''}${change.player.name || `Player ${change.player.number}`}`,
@@ -525,6 +785,7 @@ const MatchTracker = () => {
       isHome,
       showNumbers,
       customPeriods,
+      isManager,
     };
 
     setSetupComplete(false);
@@ -574,11 +835,11 @@ const MatchTracker = () => {
   const awayGoals = events.filter(e => e.type === 'goal' && e.team === awayTeam);
 
   return (
-    <div className="min-h-screen bg-gray-900 p-4">
-      <div className="max-w-2xl mx-auto bg-gray-800 rounded-lg shadow-lg p-6">
+    <div className="min-h-screen bg-gray-900 p-3 sm:p-4">
+      <div className="max-w-2xl mx-auto bg-gray-800 rounded-lg shadow-lg p-4 sm:p-6">
         {/* Header with About button */}
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-orange-500">
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold text-orange-500">
             Football Match Tracker
           </h1>
           <button
@@ -593,6 +854,8 @@ const MatchTracker = () => {
         {/* Match Setup Screen */}
         {!setupComplete && (
           <MatchSetup
+            isManager={isManager}
+            setIsManager={setIsManager}
             isHome={isHome}
             setIsHome={setIsHome}
             ageGroup={ageGroup}
@@ -629,14 +892,14 @@ const MatchTracker = () => {
         {matchStarted && (
           <>
             {/* Match Summary */}
-            <div className="bg-gray-700 p-4 rounded-lg mb-6" key={`summary-${refreshKey}`}>
+            <div className="bg-gray-700 p-3 sm:p-4 rounded-lg mb-4 sm:mb-6" key={`summary-${refreshKey}`}>
               <div className="text-center">
                 <div className="flex justify-center items-center mb-2">
-                  <span className="text-lg font-bold text-gray-100 text-right flex-1">{homeTeam}</span>
-                  <span className="text-lg font-bold text-orange-500 px-2">{homeGoals.length}–{awayGoals.length}</span>
-                  <span className="text-lg font-bold text-gray-100 text-left flex-1">{awayTeam}</span>
+                  <span className="text-sm sm:text-lg font-bold text-gray-100 text-right flex-1 truncate">{homeTeam}</span>
+                  <span className="text-base sm:text-lg font-bold text-orange-500 px-2 whitespace-nowrap">{homeGoals.length}–{awayGoals.length}</span>
+                  <span className="text-sm sm:text-lg font-bold text-gray-100 text-left flex-1 truncate">{awayTeam}</span>
                 </div>
-                <div className="flex justify-center items-start font-mono text-sm text-gray-400">
+                <div className="flex justify-center items-start font-mono text-xs sm:text-sm text-gray-400">
                   <span className="text-right flex-1">
                     {homeGoals.length > 0 && `(${homeGoals.map(g => {
                       const minute = calculateMatchMinute(g.timerValue, g.period, periodLength);
@@ -764,14 +1027,14 @@ const MatchTracker = () => {
             {periodStarted && currentPeriod && (
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <button
-                  onClick={() => handleRecordGoal(homeTeam)}
+                  onClick={() => handleGoalClick(homeTeam)}
                   className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2"
                 >
                   <Plus size={20} />
                   Goal {homeTeam}
                 </button>
                 <button
-                  onClick={() => handleRecordGoal(awayTeam)}
+                  onClick={() => handleGoalClick(awayTeam)}
                   className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2"
                 >
                   <Plus size={20} />
@@ -780,8 +1043,8 @@ const MatchTracker = () => {
               </div>
             )}
 
-            {/* Substitution Button - Available after first period starts until match ends */}
-            {matchStarted && !events.some(e => e.type === 'match_end') && (
+            {/* Substitution Button - Available after first period starts until match ends (Manager mode only) */}
+            {isManager && matchStarted && !events.some(e => e.type === 'match_end') && (
               <div className="mb-6">
                 <button
                   onClick={handleOpenSubstitutions}
@@ -876,14 +1139,20 @@ const MatchTracker = () => {
                       <>
                         <div className="flex-1">
                           <p className="font-medium text-gray-100">
-                            {event.description}
-                            {event.type === 'goal' && event.playerName && (
-                              <span className="text-gray-400 ml-2">
-                                ({showNumbers && event.playerNumber ? `#${event.playerNumber} ` : ''}{event.playerName})
-                              </span>
-                            )}
-                            {event.type === 'goal' && event.isPenalty && (
-                              <span className="text-yellow-400 ml-2">(Penalty)</span>
+                            {event.type === 'goal' && event.playerName ? (
+                              <>
+                                {event.description} - {showNumbers && event.playerNumber ? `#${event.playerNumber} ` : ''}{event.playerName}
+                                {event.isPenalty && (
+                                  <span className="text-yellow-400 ml-2">(Penalty)</span>
+                                )}
+                              </>
+                            ) : (
+                              <>
+                                {event.description}
+                                {event.type === 'goal' && event.isPenalty && (
+                                  <span className="text-yellow-400 ml-2">(Penalty)</span>
+                                )}
+                              </>
                             )}
                           </p>
                           <p className="text-sm text-gray-400">
@@ -936,7 +1205,7 @@ const MatchTracker = () => {
         <Modal
           isOpen={showResetConfirm}
           title="Reset Match?"
-          message="Are you sure you want to reset the match? All data will be lost."
+          message="Are you sure you want to reset the match? All match data will be cleared. Your player squad list will be preserved."
           confirmText="Reset"
           cancelText="Cancel"
           confirmStyle="danger"
@@ -994,6 +1263,15 @@ const MatchTracker = () => {
           awayGoals={awayGoals.length}
           onClose={handleCloseSubstitutions}
           onComplete={handleCompleteSubstitutions}
+        />
+
+        {/* Goal Scorer Modal */}
+        <GoalScorerModal
+          isOpen={showGoalScorerModal}
+          players={players}
+          showNumbers={showNumbers}
+          onClose={handleCloseGoalScorerModal}
+          onSelectScorer={handleGoalScorerSelect}
         />
 
         {/* About Modal */}

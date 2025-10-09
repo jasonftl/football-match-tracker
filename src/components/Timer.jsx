@@ -49,14 +49,14 @@ const Timer = ({
   };
 
   return (
-    <div className="bg-gray-700 p-6 rounded-lg mb-6 text-center">
+    <div className="bg-gray-700 p-4 sm:p-6 rounded-lg mb-4 sm:mb-6 text-center">
       {/* Period Display */}
-      <p className="text-lg text-gray-300 mb-2">
+      <p className="text-base sm:text-lg text-gray-300 mb-2">
         {getPeriodDisplayName(currentPeriod)} ({periodLength} minutes)
       </p>
-      
+
       {/* Timer Display */}
-      <p className="text-5xl font-bold text-orange-500 mb-4">
+      <p className="text-4xl sm:text-5xl font-bold text-orange-500 mb-4">
         {getCumulativeTime(currentPeriod, elapsedTime, periodLength)}
       </p>
 
