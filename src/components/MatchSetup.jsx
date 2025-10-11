@@ -3,7 +3,7 @@
 // Handles team selection and match configuration
 
 import React, { useState, useEffect } from 'react';
-import { Play, Sparkles } from 'lucide-react';
+import { Play } from 'lucide-react';
 import { AGE_GROUPS } from '../constants/ageGroups';
 
 const MatchSetup = ({
@@ -29,26 +29,6 @@ const MatchSetup = ({
   // Local state for custom format
   const [isCustomFormat, setIsCustomFormat] = useState(customPeriods !== null);
   const [localCustomPeriods, setLocalCustomPeriods] = useState(customPeriods || 2);
-
-  // Debug mode state
-  const [debugMode, setDebugMode] = useState(() => {
-    const saved = localStorage.getItem('debugMode');
-    return saved === 'true';
-  });
-
-  // Test API state
-  const [testApiKey, setTestApiKey] = useState('');
-  const [isTestingAPI, setIsTestingAPI] = useState(false);
-  const [testResult, setTestResult] = useState(null);
-
-  // Listen for debug mode changes
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const saved = localStorage.getItem('debugMode');
-      setDebugMode(saved === 'true');
-    }, 500);
-    return () => clearInterval(interval);
-  }, []);
 
   // Get selected age group details
   const selectedAgeGroup = AGE_GROUPS.find(ag => ag.value === ageGroup);
@@ -113,98 +93,6 @@ const MatchSetup = ({
     }
     // Update useQuarters based on periods
     setUseQuarters(numPeriods === 4);
-  };
-
-  // Test API function (local testing only)
-  const handleTestAPI = async () => {
-    if (!testApiKey.trim()) {
-      alert('Please paste your OpenRouter API key');
-      return;
-    }
-
-    const testMatchData = `Caterham Pumas 2–1 Opposition
-
-H1 Start - 18:31:00 [00:00]
-Goal - Caterham Pumas (#3 Marco) - 18:35:42 [05:42]
-Goal - Opposition - 18:42:18 [12:18]
-H1 End - 19:01:00 [30:00]
-H2 Start - 19:01:15 [30:00]
-Goal - Caterham Pumas (#1 Joseph) (Penalty) - 19:15:33 [44:18]
-H2 End - 19:31:15 [60:00]
-Match End - 19:31:15 [60:00]`;
-
-    setIsTestingAPI(true);
-    setTestResult(null);
-
-    try {
-      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${testApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'cognitivecomputations/dolphin-mistral-24b-venice-edition:free',
-          messages: [
-            {
-              role: 'system',
-              content: 'You are an AI sports writer covering grassroots football. Write short, honest match reports in clear British English. Capture the spirit of the game — the teamwork, graft, and small turning points — without exaggeration or flattery. Celebrate effort, learning, and moments of character as much as results or goals. Keep the tone warm and fair, showing pride in the team as a whole. A parent reading should feel their child\'s part mattered, and the story should sound like it came from the touchline, not a press office.'
-            },
-            {
-              role: 'user',
-              content: testMatchData
-            }
-          ]
-        })
-      });
-
-      // Capture full response
-      const responseText = await response.text();
-
-      const result = {
-        status: response.status,
-        statusText: response.statusText,
-        ok: response.ok,
-        headers: Object.fromEntries(response.headers.entries()),
-        rawResponse: responseText
-      };
-
-      if (!response.ok) {
-        // Try to parse JSON error
-        try {
-          result.parsedError = JSON.parse(responseText);
-        } catch (e) {
-          result.parseError = 'Could not parse as JSON';
-        }
-        setTestResult(result);
-      } else {
-        // Success - parse the report
-        try {
-          const data = JSON.parse(responseText);
-          result.parsedResponse = data;
-          result.report = data.choices?.[0]?.message?.content;
-          setTestResult(result);
-        } catch (e) {
-          result.parseError = 'Could not parse response as JSON';
-          setTestResult(result);
-        }
-      }
-
-      // Copy full result to clipboard
-      await navigator.clipboard.writeText(JSON.stringify(result, null, 2));
-
-    } catch (error) {
-      const errorResult = {
-        error: error.message,
-        stack: error.stack,
-        name: error.name,
-        timestamp: new Date().toISOString()
-      };
-      setTestResult(errorResult);
-      await navigator.clipboard.writeText(JSON.stringify(errorResult, null, 2));
-    } finally {
-      setIsTestingAPI(false);
-    }
   };
 
   return (
@@ -377,66 +265,6 @@ Match End - 19:31:15 [60:00]`;
           className="input-field"
         />
       </div>
-
-      {/* Debug Test API Section */}
-      {debugMode && (
-        <div className="bg-gray-700 p-4 rounded-lg space-y-3 border-2 border-purple-500">
-          <h3 className="text-sm font-bold text-purple-400 flex items-center gap-2">
-            <Sparkles size={16} />
-            Local API Test (Debug Only)
-          </h3>
-          <div>
-            <label className="block text-xs font-medium text-gray-300 mb-1">
-              OpenRouter API Key (.dev\.env)
-            </label>
-            <input
-              type="password"
-              value={testApiKey}
-              onChange={(e) => setTestApiKey(e.target.value)}
-              placeholder="Paste API key here for testing"
-              className="input-field text-sm"
-            />
-          </div>
-          <button
-            onClick={handleTestAPI}
-            disabled={isTestingAPI || !testApiKey.trim()}
-            className={`w-full font-bold py-2 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2 text-sm ${
-              isTestingAPI || !testApiKey.trim()
-                ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                : 'bg-purple-600 hover:bg-purple-700 text-white'
-            }`}
-          >
-            <Sparkles size={16} />
-            {isTestingAPI ? 'Testing API...' : 'Test OpenRouter API'}
-          </button>
-          {testResult && (
-            <div className="bg-gray-800 p-3 rounded text-xs font-mono max-h-64 overflow-y-auto">
-              <div className="mb-2 text-gray-300">
-                <strong>Status:</strong> {testResult.status || 'Error'}
-                {testResult.statusText && ` (${testResult.statusText})`}
-              </div>
-              {testResult.ok && testResult.report ? (
-                <div className="text-green-400">
-                  <strong>Success!</strong> Report generated and copied to clipboard.
-                  <div className="mt-2 text-gray-300 whitespace-pre-wrap">
-                    {testResult.report.substring(0, 200)}...
-                  </div>
-                </div>
-              ) : (
-                <div className="text-red-400">
-                  <strong>Error Details:</strong>
-                  <pre className="mt-2 text-gray-300 whitespace-pre-wrap">
-                    {JSON.stringify(testResult, null, 2)}
-                  </pre>
-                </div>
-              )}
-              <div className="mt-2 text-gray-400 text-center">
-                Full details copied to clipboard
-              </div>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Continue Button */}
       <button

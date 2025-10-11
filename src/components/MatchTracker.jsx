@@ -11,6 +11,7 @@ import Modal from './Modal';
 import SubstitutionModal from './SubstitutionModal';
 import GoalScorerModal from './GoalScorerModal';
 import AboutModal from './AboutModal';
+import UserAgreementModal from './UserAgreementModal';
 import { AGE_GROUPS } from '../constants/ageGroups';
 import {
   formatTime,
@@ -35,6 +36,12 @@ const MatchTracker = () => {
   const [showGoalScorerModal, setShowGoalScorerModal] = useState(false);
   const [pendingGoalTeam, setPendingGoalTeam] = useState(null);
   const [pendingGoalPeriod, setPendingGoalPeriod] = useState(null);
+
+  // State for user agreement (first-run)
+  const [showUserAgreement, setShowUserAgreement] = useState(() => {
+    const accepted = localStorage.getItem('userAgreementAccepted');
+    return accepted !== 'true'; // Show if not accepted
+  });
 
   // State for match configuration
   const [ageGroup, setAgeGroup] = useState('U7');
@@ -959,6 +966,12 @@ const MatchTracker = () => {
     setShowResetConfirm(false);
   };
 
+  // User agreement handler
+  const handleAcceptUserAgreement = () => {
+    localStorage.setItem('userAgreementAccepted', 'true');
+    setShowUserAgreement(false);
+  };
+
   // Helper to get next period
   const getNextPeriod = () => {
     const periods = getPeriods(useQuarters, customPeriods);
@@ -1443,6 +1456,12 @@ const MatchTracker = () => {
         <AboutModal
           isOpen={showAbout}
           onClose={() => setShowAbout(false)}
+        />
+
+        {/* User Agreement Modal - First Run */}
+        <UserAgreementModal
+          isOpen={showUserAgreement}
+          onAccept={handleAcceptUserAgreement}
         />
       </div>
     </div>

@@ -49,11 +49,12 @@ const AboutModal = ({ isOpen, onClose }) => {
 
           <h4 className="text-xl font-bold text-orange-500 mt-6">Features</h4>
           <ul className="list-disc ml-5 space-y-1 text-sm">
+            <li>Referee/Manager Modes: Choose between simplified or full tracking</li>
             <li>Match Setup: Configure age group, match format (quarters/halves/custom), and team names</li>
             <li>Custom Formats: Create custom match formats with 1, 2, or 4 periods of any length</li>
             <li>Player Management: Add and manage your team squad list with optional player numbers</li>
             <li>Substitute Tracking: Mark players as starting or substitutes with green/red toggles</li>
-            <li>Live Timer: Track match time with cumulative display across periods</li>
+            <li><strong>Real-Time Timer:</strong> Continuous timer based on wall-clock time that runs even when screen locks</li>
             <li>Goal Tracking: Record goals in real-time with timestamps</li>
             <li>Goal Details: Assign players to goals and mark penalties</li>
             <li>Missed Goals: Add goals to previous periods that were missed during play</li>
@@ -61,7 +62,8 @@ const AboutModal = ({ isOpen, onClose }) => {
             <li>Power Play Support: Automatic extra player allowance for U7-U10 when trailing</li>
             <li>Match Events: View complete chronological list of all match events</li>
             <li>Export: Copy detailed match data to clipboard for sharing</li>
-            <li>Offline Support: Works completely offline once installed</li>
+            <li><strong>AI Match Reports:</strong> Generate narrative match reports using AI (requires internet, debug mode)</li>
+            <li>Offline Support: Core features work completely offline once installed</li>
             <li>Data Persistence: Match settings, player squad lists, and substitute status saved automatically</li>
           </ul>
 
@@ -158,7 +160,7 @@ const AboutModal = ({ isOpen, onClose }) => {
               <li>Record goals immediately when they happen</li>
               <li>Use the Substitutes button to manage player changes</li>
               <li>Power play automatically calculated for U7-U10 teams when trailing</li>
-              <li>Use the pause button during breaks or injuries</li>
+              <li>Timer runs continuously based on real time - screen can be locked during play</li>
             </ul>
 
             <p className="font-bold text-gray-200 mt-3">After the Match:</p>
@@ -166,16 +168,66 @@ const AboutModal = ({ isOpen, onClose }) => {
               <li>Export match data before resetting</li>
               <li>Review and edit any incorrect times or player assignments</li>
               <li>Share the exported data with parents/coaches</li>
+              <li>If using AI reports: ensure you have parental permission and used first names only</li>
+              <li>Consider clearing old match data you no longer need</li>
             </ul>
           </div>
 
-          <h4 className="text-xl font-bold text-orange-500 mt-6">Privacy</h4>
-          <ul className="list-disc ml-5 space-y-1 text-sm">
-            <li>No data is sent to any server</li>
-            <li>All data stored locally on your device</li>
-            <li>No tracking or analytics</li>
-            <li>No account or login required</li>
-          </ul>
+          <h4 className="text-xl font-bold text-orange-500 mt-6">Privacy & Data Collection</h4>
+
+          <div className="text-sm space-y-3">
+            <p className="font-bold text-gray-200 mt-3">Local Data Storage:</p>
+            <ul className="list-disc ml-5 space-y-1">
+              <li>All core match data is stored locally on your device</li>
+              <li>Player names, numbers, match events remain on your device</li>
+              <li>No data sent to any server for offline functionality</li>
+              <li>No account or login required</li>
+            </ul>
+
+            <p className="font-bold text-gray-200 mt-3">Vercel Hosting & Analytics:</p>
+            <ul className="list-disc ml-5 space-y-1">
+              <li>App hosted on Vercel platform</li>
+              <li>May collect anonymous usage analytics (page views, performance)</li>
+              <li>No personally identifiable information collected</li>
+              <li>Analytics help improve app performance</li>
+            </ul>
+
+            <p className="font-bold text-gray-200 mt-3">AI Match Report Feature:</p>
+            <p className="text-yellow-400 font-bold">⚠️ Important Privacy Notice:</p>
+            <ul className="list-disc ml-5 space-y-1">
+              <li><strong>Match data including player names is sent to AI service</strong></li>
+              <li>Data may be used by AI provider for model training</li>
+              <li>You MUST obtain permission from parents/guardians before using</li>
+              <li>Strongly recommended: Use first names only, NOT full names</li>
+              <li>Feature is optional (debug mode must be enabled)</li>
+            </ul>
+
+            <p className="font-bold text-gray-200 mt-3">Your Responsibilities:</p>
+            <ul className="list-disc ml-5 space-y-1">
+              <li>✅ Obtain written permission from parents/guardians</li>
+              <li>✅ Use first names only (e.g., "John" not "John Smith")</li>
+              <li>✅ Inform parents data will be sent to AI service</li>
+              <li>✅ Explain data may be used for AI training</li>
+              <li>✅ Clear old match data you no longer need</li>
+            </ul>
+          </div>
+
+          <h4 className="text-xl font-bold text-orange-500 mt-6">User Agreement</h4>
+          <div className="bg-gray-700 p-4 rounded-lg text-sm space-y-2">
+            <p className="font-bold text-yellow-400">By using this app, you agree to:</p>
+            <ol className="list-decimal ml-5 space-y-1">
+              <li>Take responsibility for data you enter</li>
+              <li>Obtain parental permission before recording player names</li>
+              <li>Obtain parental permission before using AI features</li>
+              <li>Use first names only (not full names) with AI features</li>
+              <li>Understand data may be used for AI training</li>
+              <li>Accept the app "as is" with no warranty</li>
+              <li>Comply with applicable data protection laws</li>
+            </ol>
+            <p className="text-yellow-400 font-bold mt-3">
+              If you do not agree, do not use this application.
+            </p>
+          </div>
 
           <h4 className="text-xl font-bold text-orange-500 mt-6">Browser Support</h4>
           <p className="text-sm">iOS Safari 14+, Chrome 90+, Firefox 88+, Edge 90+</p>
