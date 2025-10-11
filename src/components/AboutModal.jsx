@@ -11,12 +11,25 @@ const AboutModal = ({ isOpen, onClose }) => {
     return saved === 'true';
   });
 
+  const [aiEnabled, setAiEnabled] = useState(() => {
+    const saved = localStorage.getItem('aiEnabled');
+    return saved === 'true';
+  });
+
   useEffect(() => {
     localStorage.setItem('debugMode', debugMode.toString());
   }, [debugMode]);
 
+  useEffect(() => {
+    localStorage.setItem('aiEnabled', aiEnabled.toString());
+  }, [aiEnabled]);
+
   const handleToggleDebug = () => {
     setDebugMode(!debugMode);
+  };
+
+  const handleToggleAi = () => {
+    setAiEnabled(!aiEnabled);
   };
 
   if (!isOpen) return null;
@@ -62,7 +75,7 @@ const AboutModal = ({ isOpen, onClose }) => {
             <li>Power Play Support: Automatic extra player allowance for U7-U10 when trailing</li>
             <li>Match Events: View complete chronological list of all match events</li>
             <li>Export: Copy detailed match data to clipboard for sharing</li>
-            <li><strong>AI Match Reports:</strong> Generate narrative match reports using AI (requires internet, debug mode)</li>
+            <li><strong>AI Match Reports:</strong> Generate narrative match reports using AI (requires internet, enable in settings below)</li>
             <li>Offline Support: Core features work completely offline once installed</li>
             <li>Data Persistence: Match settings, player squad lists, and substitute status saved automatically</li>
           </ul>
@@ -201,7 +214,7 @@ const AboutModal = ({ isOpen, onClose }) => {
               <li><strong>Match data including player names is sent to AI service</strong></li>
               <li>Data may be used by AI provider for model training</li>
               <li>You MUST notify parents/guardians that you will be using first names (not full names) and that AI may use this data for training</li>
-              <li>Feature is optional (debug mode must be enabled)</li>
+              <li>Feature is optional (must be enabled in settings below)</li>
             </ul>
             <p className="text-xs text-gray-400 mt-1">
               Privacy Policy: <span className="text-gray-300">https://openrouter.ai/privacy</span>
@@ -251,6 +264,35 @@ const AboutModal = ({ isOpen, onClose }) => {
 
           <div className="mt-6 pt-6 border-t border-gray-700 text-center text-sm text-gray-400">
             <p>© 2025 - All rights reserved</p>
+          </div>
+        </div>
+
+        {/* AI Features Toggle */}
+        <div className="mt-6 pt-6 border-t border-gray-700">
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium text-gray-300">
+              AI Match Reports (Requires internet connection)
+            </label>
+            <button
+              onClick={handleToggleAi}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                aiEnabled ? 'bg-orange-600' : 'bg-gray-600'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  aiEnabled ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+          <p className="text-xs text-gray-400 mt-2">
+            {aiEnabled ? 'AI report button enabled' : 'AI report button disabled'}
+          </p>
+          <div className="bg-yellow-900 border border-yellow-600 rounded p-3 mt-3">
+            <p className="text-xs text-yellow-200">
+              <strong>⚠️ Privacy Reminder:</strong> When enabled, match data including player names will be sent to AI service and may be used for training. You must notify parents/guardians and use first names only.
+            </p>
           </div>
         </div>
 

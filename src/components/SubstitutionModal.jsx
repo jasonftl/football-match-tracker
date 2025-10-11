@@ -13,6 +13,7 @@ const SubstitutionModal = ({
   ageGroup,
   homeGoals,
   awayGoals,
+  isHome,
   onClose,
   onComplete
 }) => {
@@ -49,8 +50,9 @@ const SubstitutionModal = ({
   // Check if power play is allowed (U7-U10 only)
   const powerPlayAllowed = ['U7', 'U8', 'U9', 'U10'].includes(ageGroup);
 
-  // Calculate goal difference (positive = we're winning, negative = we're losing)
-  const goalDifference = homeGoals - awayGoals;
+  // Calculate goal difference from user's perspective
+  // (positive = we're winning, negative = we're losing)
+  const goalDifference = isHome ? (homeGoals - awayGoals) : (awayGoals - homeGoals);
 
   // Calculate power play bonus
   let powerPlayBonus = 0;

@@ -78,9 +78,17 @@ const MatchTracker = () => {
     const saved = localStorage.getItem('debugMode');
     return saved === 'true';
   });
+  const [aiEnabled, setAiEnabled] = useState(() => {
+    const saved = localStorage.getItem('aiEnabled');
+    return saved === 'true';
+  });
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [showAICopied, setShowAICopied] = useState(false);
   const [aiError, setAIError] = useState(null);
+
+  // State for goal button feedback
+  const [goalButtonFeedback, setGoalButtonFeedback] = useState({ home: false, away: false });
+  const [missedGoalButtonFeedback, setMissedGoalButtonFeedback] = useState({ home: false, away: false });
 
   // Load data from localStorage on component mount
   useEffect(() => {
@@ -140,11 +148,13 @@ const MatchTracker = () => {
     localStorage.setItem('footballPlayers', JSON.stringify(players));
   }, [players]);
 
-  // Listen for debug mode changes
+  // Listen for debug mode and AI enabled changes
   useEffect(() => {
     const interval = setInterval(() => {
-      const saved = localStorage.getItem('debugMode');
-      setDebugMode(saved === 'true');
+      const savedDebug = localStorage.getItem('debugMode');
+      setDebugMode(savedDebug === 'true');
+      const savedAi = localStorage.getItem('aiEnabled');
+      setAiEnabled(savedAi === 'true');
     }, 500);
     return () => clearInterval(interval);
   }, []);
@@ -463,6 +473,16 @@ const MatchTracker = () => {
   };
 
   const confirmMissedGoal = () => {
+    const buttonKey = missedGoalTeam === homeTeam ? 'home' : 'away';
+
+    // Set feedback state
+    setMissedGoalButtonFeedback(prev => ({ ...prev, [buttonKey]: true }));
+
+    // Clear feedback after 1.5 seconds
+    setTimeout(() => {
+      setMissedGoalButtonFeedback(prev => ({ ...prev, [buttonKey]: false }));
+    }, 1500);
+
     handleRecordGoal(missedGoalTeam, missedGoalPeriod);
     setShowMissedGoalConfirm(false);
     setMissedGoalTeam(null);
@@ -477,6 +497,16 @@ const MatchTracker = () => {
 
   // Goal scorer modal handlers
   const handleGoalClick = (team) => {
+    const buttonKey = team === homeTeam ? 'home' : 'away';
+
+    // Set feedback state
+    setGoalButtonFeedback(prev => ({ ...prev, [buttonKey]: true }));
+
+    // Clear feedback after 1.5 seconds
+    setTimeout(() => {
+      setGoalButtonFeedback(prev => ({ ...prev, [buttonKey]: false }));
+    }, 1500);
+
     const userTeam = isHome ? homeTeam : awayTeam;
 
     // If Referee mode, always record directly without showing modal
@@ -1109,10 +1139,15 @@ const MatchTracker = () => {
                           const lastPeriod = completedPeriods[completedPeriods.length - 1];
                           handleMissedGoalClick(homeTeam, lastPeriod);
                         }}
-                        className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2"
+                        disabled={missedGoalButtonFeedback.home}
+                        className={`font-bold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2 ${
+                          missedGoalButtonFeedback.home
+                            ? 'bg-green-600 text-white cursor-not-allowed'
+                            : 'bg-orange-600 hover:bg-orange-700 text-white'
+                        }`}
                       >
                         <Plus size={20} />
-                        Goal {homeTeam}
+                        {missedGoalButtonFeedback.home ? 'Goal Added!' : `Goal ${homeTeam}`}
                       </button>
                       <button
                         onClick={() => {
@@ -1122,10 +1157,15 @@ const MatchTracker = () => {
                           const lastPeriod = completedPeriods[completedPeriods.length - 1];
                           handleMissedGoalClick(awayTeam, lastPeriod);
                         }}
-                        className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2"
+                        disabled={missedGoalButtonFeedback.away}
+                        className={`font-bold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2 ${
+                          missedGoalButtonFeedback.away
+                            ? 'bg-green-600 text-white cursor-not-allowed'
+                            : 'bg-orange-600 hover:bg-orange-700 text-white'
+                        }`}
                       >
                         <Plus size={20} />
-                        Goal {awayTeam}
+                        {missedGoalButtonFeedback.away ? 'Goal Added!' : `Goal ${awayTeam}`}
                       </button>
                     </div>
                   </div>
@@ -1153,10 +1193,15 @@ const MatchTracker = () => {
                         const lastPeriod = completedPeriods[completedPeriods.length - 1];
                         handleMissedGoalClick(homeTeam, lastPeriod);
                       }}
-                      className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2"
+                      disabled={missedGoalButtonFeedback.home}
+                      className={`font-bold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2 ${
+                        missedGoalButtonFeedback.home
+                          ? 'bg-green-600 text-white cursor-not-allowed'
+                          : 'bg-orange-600 hover:bg-orange-700 text-white'
+                      }`}
                     >
                       <Plus size={20} />
-                      Goal {homeTeam}
+                      {missedGoalButtonFeedback.home ? 'Goal Added!' : `Goal ${homeTeam}`}
                     </button>
                     <button
                       onClick={() => {
@@ -1166,10 +1211,15 @@ const MatchTracker = () => {
                         const lastPeriod = completedPeriods[completedPeriods.length - 1];
                         handleMissedGoalClick(awayTeam, lastPeriod);
                       }}
-                      className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2"
+                      disabled={missedGoalButtonFeedback.away}
+                      className={`font-bold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2 ${
+                        missedGoalButtonFeedback.away
+                          ? 'bg-green-600 text-white cursor-not-allowed'
+                          : 'bg-orange-600 hover:bg-orange-700 text-white'
+                      }`}
                     >
                       <Plus size={20} />
-                      Goal {awayTeam}
+                      {missedGoalButtonFeedback.away ? 'Goal Added!' : `Goal ${awayTeam}`}
                     </button>
                   </div>
                 </div>
@@ -1181,17 +1231,27 @@ const MatchTracker = () => {
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <button
                   onClick={() => handleGoalClick(homeTeam)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2"
+                  disabled={goalButtonFeedback.home}
+                  className={`font-bold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2 ${
+                    goalButtonFeedback.home
+                      ? 'bg-green-600 text-white cursor-not-allowed'
+                      : 'bg-blue-600 hover:bg-blue-700 text-white'
+                  }`}
                 >
                   <Plus size={20} />
-                  Goal {homeTeam}
+                  {goalButtonFeedback.home ? 'Goal Added!' : `Goal ${homeTeam}`}
                 </button>
                 <button
                   onClick={() => handleGoalClick(awayTeam)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2"
+                  disabled={goalButtonFeedback.away}
+                  className={`font-bold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2 ${
+                    goalButtonFeedback.away
+                      ? 'bg-green-600 text-white cursor-not-allowed'
+                      : 'bg-blue-600 hover:bg-blue-700 text-white'
+                  }`}
                 >
                   <Plus size={20} />
-                  Goal {awayTeam}
+                  {goalButtonFeedback.away ? 'Goal Added!' : `Goal ${awayTeam}`}
                 </button>
               </div>
             )}
@@ -1337,13 +1397,13 @@ const MatchTracker = () => {
 
             {/* Action Buttons */}
             <div className="flex flex-col gap-3">
-              {/* AI Report Button (Debug Mode Only) */}
-              {debugMode && (
+              {/* AI Report Button */}
+              <div>
                 <button
                   onClick={handleGenerateAIReport}
-                  disabled={!events.some(e => e.type === 'match_end') || isGeneratingAI}
+                  disabled={!aiEnabled || !events.some(e => e.type === 'match_end') || isGeneratingAI}
                   className={`w-full font-bold py-3 px-6 rounded-lg transition duration-200 flex items-center justify-center gap-2 ${
-                    !events.some(e => e.type === 'match_end') || isGeneratingAI
+                    !aiEnabled || !events.some(e => e.type === 'match_end') || isGeneratingAI
                       ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
                       : 'bg-purple-600 hover:bg-purple-700 text-white'
                   }`}
@@ -1357,7 +1417,12 @@ const MatchTracker = () => {
                     ? `Error: ${aiError}`
                     : 'AI Report to Clipboard'}
                 </button>
-              )}
+                {!aiEnabled && (
+                  <p className="text-xs text-yellow-400 mt-2 text-center">
+                    Enable AI Features in the About (Info) page to use this feature
+                  </p>
+                )}
+              </div>
 
               {/* Regular Export and Reset Buttons */}
               <div className="flex gap-3">
@@ -1439,6 +1504,7 @@ const MatchTracker = () => {
           ageGroup={ageGroup}
           homeGoals={homeGoals.length}
           awayGoals={awayGoals.length}
+          isHome={isHome}
           onClose={handleCloseSubstitutions}
           onComplete={handleCompleteSubstitutions}
         />
