@@ -239,8 +239,7 @@ Match End - 15:10:00 [40:00]
 **Important Privacy Note:**
 - **Match data including player names is sent to AI service**
 - Data may be used by AI provider for model training
-- **You must have permission from players' parents/guardians before using this feature**
-- **Strongly recommended: Use first names only, not full names**
+- **You must notify parents/guardians that you will be using first names (not full names) and that AI may use this data for training**
 - Consider data sensitivity before generating AI reports
 - Feature is optional - traditional export still available
 
@@ -283,7 +282,7 @@ Match End - 15:10:00 [40:00]
 - Export match data before resetting
 - Review and edit any incorrect times or player assignments
 - Share the exported data with parents/coaches
-- If using AI reports: ensure you have parental permission and used first names only
+- If using AI reports: ensure you have notified parents and used first names only
 - Consider clearing old match data you no longer need
 
 ## Age Group Defaults
@@ -358,6 +357,8 @@ This app is hosted on Vercel, which may collect anonymous usage analytics:
 - No tracking of player names, match data, or specific content
 - Analytics help improve app performance and user experience
 
+**Privacy Policy:** https://vercel.com/legal/privacy-policy
+
 #### AI Match Report Generation
 
 **When you use the "AI Report to Clipboard" feature:**
@@ -373,10 +374,12 @@ This app is hosted on Vercel, which may collect anonymous usage analytics:
   - This data is sent over the internet and processed by third-party AI services
   - Once sent, we cannot control how the AI provider uses the data
 
+**Privacy Policy:** https://openrouter.ai/privacy
+
 #### Your Responsibilities
 
 **Before using AI features, you MUST:**
-1. ✅ Obtain written permission from players' parents/guardians
+1. ✅ Notify parents/guardians that you will be using first names (not full names)
 2. ✅ Inform parents that data will be sent to AI service
 3. ✅ Explain that data may be used for AI training
 4. ✅ **Use first names only - DO NOT use full names**
@@ -395,7 +398,7 @@ This app is hosted on Vercel, which may collect anonymous usage analytics:
 - Be mindful when copying data to clipboard (can be accidentally shared)
 - Do not enter sensitive or confidential information
 - Remember that exported/clipboard data can be shared anywhere
-- You are responsible for obtaining necessary permissions before sharing player data
+- You are responsible for notifying parents/guardians before sharing player data
 
 ## User Agreement
 
@@ -412,15 +415,15 @@ This app is hosted on Vercel, which may collect anonymous usage analytics:
 
 - You understand that the AI Match Report feature sends data to third-party services
 - You acknowledge that data sent to AI services may be used for AI model training
-- You agree to obtain necessary permissions before using AI features with players' data
+- You agree to notify parents/guardians before using AI features with players' data
 - You understand that Vercel may collect anonymous usage analytics
 
-### 3. Parental Permission and Player Privacy
+### 3. Parental Notification and Player Privacy
 
-- You agree to obtain written permission from parents/guardians before:
-  - Recording player names in the app
-  - Using the AI Report feature with player data
-  - Sharing any match data that includes player information
+- You agree to notify parents/guardians before using the AI Report feature that:
+  - You will be using first names only (not full names)
+  - Data will be sent to AI service
+  - AI may use this data for training purposes
 - You agree to use first names only (not full names) when using AI features
 - You understand that you are solely responsible for compliance with data protection laws
 

@@ -52,14 +52,17 @@ const UserAgreementModal = ({ isOpen, onAccept }) => {
               <li><strong className="text-yellow-400">Data sent to AI may be used for AI model training</strong></li>
               <li>AI features require internet connection</li>
             </ul>
+            <p className="text-xs text-gray-400 mt-2">
+              Privacy Policies: Vercel (<span className="text-gray-300">https://vercel.com/legal/privacy-policy</span>), OpenRouter (<span className="text-gray-300">https://openrouter.ai/privacy</span>)
+            </p>
 
-            <h3 className="text-lg font-bold text-orange-500 mt-4">3. Parental Permission & Privacy</h3>
+            <h3 className="text-lg font-bold text-orange-500 mt-4">3. Parental Notification & Privacy</h3>
             <p className="text-yellow-400 font-bold">⚠️ IMPORTANT - You MUST:</p>
             <ul className="list-disc ml-5 space-y-1">
-              <li><strong>Obtain written permission from parents/guardians before recording player names</strong></li>
-              <li><strong>Obtain permission before using AI features with player data</strong></li>
+              <li><strong>Notify parents/guardians before using AI features that you will be using first names (not full names)</strong></li>
+              <li><strong>Inform parents that data will be sent to AI service</strong></li>
+              <li><strong>Explain that AI may use this data for training</strong></li>
               <li><strong>Use first names only (NOT full names) when using AI features</strong></li>
-              <li>Inform parents that AI data may be used for training</li>
               <li>Comply with applicable data protection laws (GDPR, etc.)</li>
             </ul>
 
@@ -76,8 +79,8 @@ const UserAgreementModal = ({ isOpen, onAccept }) => {
               <p className="font-bold text-white">By clicking "I Agree", you confirm that:</p>
               <ul className="list-disc ml-5 space-y-1 mt-2">
                 <li>You have read and understood these terms</li>
-                <li>You will obtain parental permission before recording player data</li>
-                <li>You will use first names only with AI features</li>
+                <li>You will notify parents/guardians before using AI features</li>
+                <li>You will use first names only (not full names) with AI features</li>
                 <li>You understand AI data may be used for training</li>
                 <li>You accept the app "as is" with no warranty</li>
                 <li>You are old enough to enter into this agreement</li>

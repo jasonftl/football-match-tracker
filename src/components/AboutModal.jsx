@@ -168,7 +168,7 @@ const AboutModal = ({ isOpen, onClose }) => {
               <li>Export match data before resetting</li>
               <li>Review and edit any incorrect times or player assignments</li>
               <li>Share the exported data with parents/coaches</li>
-              <li>If using AI reports: ensure you have parental permission and used first names only</li>
+              <li>If using AI reports: ensure you have notified parents and used first names only</li>
               <li>Consider clearing old match data you no longer need</li>
             </ul>
           </div>
@@ -191,23 +191,28 @@ const AboutModal = ({ isOpen, onClose }) => {
               <li>No personally identifiable information collected</li>
               <li>Analytics help improve app performance</li>
             </ul>
+            <p className="text-xs text-gray-400 mt-1">
+              Privacy Policy: <span className="text-gray-300">https://vercel.com/legal/privacy-policy</span>
+            </p>
 
             <p className="font-bold text-gray-200 mt-3">AI Match Report Feature:</p>
             <p className="text-yellow-400 font-bold">⚠️ Important Privacy Notice:</p>
             <ul className="list-disc ml-5 space-y-1">
               <li><strong>Match data including player names is sent to AI service</strong></li>
               <li>Data may be used by AI provider for model training</li>
-              <li>You MUST obtain permission from parents/guardians before using</li>
-              <li>Strongly recommended: Use first names only, NOT full names</li>
+              <li>You MUST notify parents/guardians that you will be using first names (not full names) and that AI may use this data for training</li>
               <li>Feature is optional (debug mode must be enabled)</li>
             </ul>
+            <p className="text-xs text-gray-400 mt-1">
+              Privacy Policy: <span className="text-gray-300">https://openrouter.ai/privacy</span>
+            </p>
 
             <p className="font-bold text-gray-200 mt-3">Your Responsibilities:</p>
             <ul className="list-disc ml-5 space-y-1">
-              <li>✅ Obtain written permission from parents/guardians</li>
-              <li>✅ Use first names only (e.g., "John" not "John Smith")</li>
+              <li>✅ Notify parents/guardians that you will be using first names (not full names)</li>
               <li>✅ Inform parents data will be sent to AI service</li>
               <li>✅ Explain data may be used for AI training</li>
+              <li>✅ Use first names only (e.g., "John" not "John Smith")</li>
               <li>✅ Clear old match data you no longer need</li>
             </ul>
           </div>
@@ -217,8 +222,7 @@ const AboutModal = ({ isOpen, onClose }) => {
             <p className="font-bold text-yellow-400">By using this app, you agree to:</p>
             <ol className="list-decimal ml-5 space-y-1">
               <li>Take responsibility for data you enter</li>
-              <li>Obtain parental permission before recording player names</li>
-              <li>Obtain parental permission before using AI features</li>
+              <li>Notify parents/guardians before using AI features that you will be using first names (not full names) and that AI may use this data for training</li>
               <li>Use first names only (not full names) with AI features</li>
               <li>Understand data may be used for AI training</li>
               <li>Accept the app "as is" with no warranty</li>
