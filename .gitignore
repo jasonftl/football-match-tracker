@@ -8,6 +8,7 @@
 .backup/
 .claude/
 .dev/
+.mypy_cache
 node_modules/
 
 # ============================================
