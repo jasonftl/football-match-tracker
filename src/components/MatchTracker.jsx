@@ -785,13 +785,38 @@ const MatchTracker = () => {
         })
       });
 
+      // Capture full response for debugging
+      const responseText = await response.text();
+      let errorData = null;
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to generate report');
+        try {
+          errorData = JSON.parse(responseText);
+        } catch (e) {
+          // Response wasn't JSON
+          errorData = { error: 'Non-JSON response', response: responseText };
+        }
+
+        const errorMessage = `API Error (${response.status}): ${errorData.error || 'Unknown error'}` +
+          (errorData.details ? `\nDetails: ${errorData.details}` : '') +
+          (errorData.message ? `\nMessage: ${errorData.message}` : '');
+
+        throw new Error(errorMessage);
       }
 
-      const data = await response.json();
+      // Parse successful response
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        throw new Error(`Failed to parse response: ${responseText}`);
+      }
+
       const report = data.report;
+
+      if (!report) {
+        throw new Error(`No report in response. Full response: ${responseText}`);
+      }
 
       // Copy report to clipboard
       await navigator.clipboard.writeText(report);
