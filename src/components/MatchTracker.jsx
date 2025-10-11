@@ -3,7 +3,7 @@
 // Uses modular components for better maintainability
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Download, Edit2, Trash2, Save, X, Play, Users, Info } from 'lucide-react';
+import { Plus, Download, Edit2, Trash2, Save, X, Play, Users, Info, Sparkles } from 'lucide-react';
 import MatchSetup from './MatchSetup';
 import PlayerSetup from './PlayerSetup';
 import Timer from './Timer';
@@ -16,7 +16,9 @@ import {
   formatTime,
   calculateMatchMinute,
   getCurrentTimestamp,
-  getPeriods
+  getPeriods,
+  getElapsedSeconds,
+  getCumulativeTimeFromRealTime
 } from '../utils/helpers';
 
 const MatchTracker = () => {
@@ -53,8 +55,7 @@ const MatchTracker = () => {
 
   // State for timing
   const [currentPeriod, setCurrentPeriod] = useState(null);
-  const [isRunning, setIsRunning] = useState(false);
-  const [elapsedTime, setElapsedTime] = useState(0);
+  const [periodStartTimestamp, setPeriodStartTimestamp] = useState(null);
   const [periodStarted, setPeriodStarted] = useState(false);
   const timerRef = useRef(null);
 
@@ -64,6 +65,15 @@ const MatchTracker = () => {
   const [editForm, setEditForm] = useState({});
   const [showCopied, setShowCopied] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  // State for debug mode and AI report
+  const [debugMode, setDebugMode] = useState(() => {
+    const saved = localStorage.getItem('debugMode');
+    return saved === 'true';
+  });
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [showAICopied, setShowAICopied] = useState(false);
+  const [aiError, setAIError] = useState(null);
 
   // Load data from localStorage on component mount
   useEffect(() => {
@@ -79,7 +89,7 @@ const MatchTracker = () => {
       setPlayersConfigured(data.playersConfigured || false);
       setMatchStarted(data.matchStarted || false);
       setCurrentPeriod(data.currentPeriod || null);
-      setElapsedTime(data.elapsedTime || 0);
+      setPeriodStartTimestamp(data.periodStartTimestamp || null);
       setEvents(data.events || []);
       setUseQuarters(data.useQuarters !== undefined ? data.useQuarters : false);
       setPeriodLength(data.periodLength || 30);
@@ -105,7 +115,7 @@ const MatchTracker = () => {
       playersConfigured,
       matchStarted,
       currentPeriod,
-      elapsedTime,
+      periodStartTimestamp,
       events,
       useQuarters,
       periodLength,
@@ -116,27 +126,34 @@ const MatchTracker = () => {
       isManager,
     };
     localStorage.setItem('footballMatchData', JSON.stringify(data));
-  }, [ageGroup, homeTeam, awayTeam, setupComplete, playersConfigured, matchStarted, currentPeriod, elapsedTime, events, useQuarters, periodLength, isHome, periodStarted, showNumbers, customPeriods, isManager]);
+  }, [ageGroup, homeTeam, awayTeam, setupComplete, playersConfigured, matchStarted, currentPeriod, periodStartTimestamp, events, useQuarters, periodLength, isHome, periodStarted, showNumbers, customPeriods, isManager]);
 
   // Save players to localStorage
   useEffect(() => {
     localStorage.setItem('footballPlayers', JSON.stringify(players));
   }, [players]);
 
-  // Timer effect
+  // Listen for debug mode changes
   useEffect(() => {
-    if (isRunning) {
+    const interval = setInterval(() => {
+      const saved = localStorage.getItem('debugMode');
+      setDebugMode(saved === 'true');
+    }, 500);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Timer effect - checks elapsed time every second and auto-ends period
+  useEffect(() => {
+    if (currentPeriod && periodStartTimestamp) {
       timerRef.current = setInterval(() => {
-        setElapsedTime((prevTime) => {
-          const newTime = prevTime + 1;
-          const periodLengthInSeconds = periodLength * 60;
-          if (newTime >= periodLengthInSeconds) {
-            setIsRunning(false);
-            handleEndPeriod();
-            return periodLengthInSeconds;
-          }
-          return newTime;
-        });
+        const elapsedSeconds = getElapsedSeconds(periodStartTimestamp);
+        const periodLengthInSeconds = periodLength * 60;
+
+        // Auto-end period when time is up
+        if (elapsedSeconds >= periodLengthInSeconds) {
+          clearInterval(timerRef.current);
+          handleEndPeriod();
+        }
       }, 1000);
     } else {
       if (timerRef.current) {
@@ -148,7 +165,7 @@ const MatchTracker = () => {
         clearInterval(timerRef.current);
       }
     };
-  }, [isRunning, periodLength]);
+  }, [currentPeriod, periodStartTimestamp, periodLength]);
 
   // Get selected age group
   const selectedAgeGroup = AGE_GROUPS.find(ag => ag.value === ageGroup);
@@ -191,9 +208,9 @@ const MatchTracker = () => {
 
   // Period handlers
   const handleStartPeriod = (period) => {
+    const startTime = Date.now();
     setCurrentPeriod(period);
-    setIsRunning(true);
-    setElapsedTime(0);
+    setPeriodStartTimestamp(startTime);
     setPeriodStarted(true);
 
     let previousMinutes = 0;
@@ -205,7 +222,7 @@ const MatchTracker = () => {
     const cumulativeStartTime = previousMinutes * 60;
 
     const periodEvent = {
-      id: Date.now(),
+      id: Date.now() + Math.random(),
       type: 'period_start',
       period: period,
       timestamp: getCurrentTimestamp(),
@@ -215,17 +232,7 @@ const MatchTracker = () => {
     setEvents((prevEvents) => [...prevEvents, periodEvent]);
   };
 
-  const handlePause = () => {
-    setIsRunning(false);
-  };
-
-  const handleResume = () => {
-    setIsRunning(true);
-  };
-
   const handleEndPeriod = () => {
-    setIsRunning(false);
-
     let previousMinutes = 0;
     if (currentPeriod === 'Q2') previousMinutes = periodLength;
     else if (currentPeriod === 'Q3') previousMinutes = periodLength * 2;
@@ -235,7 +242,7 @@ const MatchTracker = () => {
     const cumulativeEndTime = (previousMinutes * 60) + (periodLength * 60);
 
     const periodEndEvent = {
-      id: Date.now(),
+      id: Date.now() + Math.random(),
       type: 'period_end',
       period: currentPeriod,
       timestamp: getCurrentTimestamp(),
@@ -257,19 +264,25 @@ const MatchTracker = () => {
     const currentIndex = periods.indexOf(currentPeriod);
     if (currentIndex < periods.length - 1) {
       setCurrentPeriod(null);
+      setPeriodStartTimestamp(null);
     } else {
       const matchEndEvent = {
-        id: Date.now() + 1,
+        id: Date.now() + Math.random(),
         type: 'match_end',
         timestamp: getCurrentTimestamp(),
         timerValue: formatTime(cumulativeEndTime),
         description: 'Match End',
       };
-      setEvents((prevEvents) => [...prevEvents, matchEndEvent]);
+      setEvents((prevEvents) => {
+        const matchEndExists = prevEvents.some(e => e.type === 'match_end');
+        if (matchEndExists) {
+          return prevEvents;
+        }
+        return [...prevEvents, matchEndEvent];
+      });
       setCurrentPeriod(null);
+      setPeriodStartTimestamp(null);
     }
-
-    setElapsedTime(0);
   };
 
   const handleEndPeriodClick = () => {
@@ -295,10 +308,12 @@ const MatchTracker = () => {
     else if (periodToUse === 'Q4') previousMinutes = periodLength * 3;
     else if (periodToUse === 'H2') previousMinutes = periodLength;
 
-    const cumulativeTime = (previousMinutes * 60) + elapsedTime;
+    // Calculate elapsed time from real-time timestamp
+    const elapsedSeconds = periodStartTimestamp ? getElapsedSeconds(periodStartTimestamp) : 0;
+    const cumulativeTime = (previousMinutes * 60) + elapsedSeconds;
 
     const goalEvent = {
-      id: Date.now(),
+      id: Date.now() + Math.random(),
       type: 'goal',
       team: team,
       period: periodToUse,
@@ -708,6 +723,95 @@ const MatchTracker = () => {
     });
   };
 
+  // AI Report handler
+  const handleGenerateAIReport = async () => {
+    // Generate match data first (reuse export logic)
+    const homeGoals = events.filter(e => e.type === 'goal' && e.team === homeTeam);
+    const awayGoals = events.filter(e => e.type === 'goal' && e.team === awayTeam);
+
+    let exportText = `${homeTeam} ${homeGoals.length}–${awayGoals.length} ${awayTeam}\n\n`;
+
+    // Helper function to convert timerValue (MM:SS) to seconds
+    const timeToSeconds = (timerValue) => {
+      const parts = timerValue.split(':');
+      return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+    };
+
+    // Get match end time (in seconds)
+    const matchEndEvent = events.find(e => e.type === 'match_end');
+    const matchEndSeconds = matchEndEvent ? timeToSeconds(matchEndEvent.timerValue) :
+      (events.filter(e => e.type === 'period_end').length * periodLength * 60);
+
+    // Similar logic to export (abbreviated for AI input)
+    events.forEach(event => {
+      if (event.type === 'period_start' || event.type === 'period_end') {
+        exportText += `${event.description} - ${event.timestamp} [${event.timerValue}]\n`;
+      } else if (event.type === 'goal') {
+        let goalLine = `${event.description}`;
+        if (event.playerNumber) {
+          let playerName = event.playerName;
+          if (!playerName) {
+            const player = players.find(p => p.number === event.playerNumber);
+            playerName = player ? (player.name || `Player ${player.number}`) : null;
+          }
+          if (playerName) {
+            goalLine += ` (${showNumbers && event.playerNumber ? `#${event.playerNumber} ` : ''}${playerName})`;
+          }
+        }
+        if (event.isPenalty) {
+          goalLine += ` (Penalty)`;
+        }
+        goalLine += ` - ${event.timestamp} [${event.timerValue}]`;
+        exportText += goalLine + '\n';
+      } else if (event.type === 'substitution') {
+        exportText += `${event.description} - ${event.timestamp} [${event.timerValue}]\n`;
+      } else if (event.type === 'match_end') {
+        exportText += `${event.description} - ${event.timestamp} [${event.timerValue}]\n`;
+      }
+    });
+
+    // Call AI API
+    setIsGeneratingAI(true);
+    setAIError(null);
+
+    try {
+      const response = await fetch('/api/generate-report', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          matchData: exportText
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to generate report');
+      }
+
+      const data = await response.json();
+      const report = data.report;
+
+      // Copy report to clipboard
+      await navigator.clipboard.writeText(report);
+
+      setShowAICopied(true);
+      setTimeout(() => {
+        setShowAICopied(false);
+      }, 3000);
+
+    } catch (error) {
+      console.error('Error generating AI report:', error);
+      setAIError(error.message || 'Failed to generate AI report');
+      setTimeout(() => {
+        setAIError(null);
+      }, 5000);
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  };
+
   // Substitution handlers
   const handleOpenSubstitutions = () => {
     setShowSubstitutionModal(true);
@@ -725,8 +829,8 @@ const MatchTracker = () => {
     let cumulativeTime = 0;
     let periodForSub = currentPeriod;
 
-    if (currentPeriod) {
-      // During a period - calculate cumulative time
+    if (currentPeriod && periodStartTimestamp) {
+      // During a period - calculate cumulative time from real-time
       let previousMinutes = 0;
       if (currentPeriod === 'Q2') previousMinutes = periodLength;
       else if (currentPeriod === 'Q3') previousMinutes = periodLength * 2;
@@ -734,7 +838,8 @@ const MatchTracker = () => {
       else if (currentPeriod === 'H2') previousMinutes = periodLength;
       else if (currentPeriod === 'P1') previousMinutes = 0;
 
-      cumulativeTime = (previousMinutes * 60) + elapsedTime;
+      const elapsedSeconds = getElapsedSeconds(periodStartTimestamp);
+      cumulativeTime = (previousMinutes * 60) + elapsedSeconds;
     } else {
       // Between periods - find the last completed period and use its end time
       const completedPeriods = events.filter(e => e.type === 'period_end');
@@ -792,8 +897,7 @@ const MatchTracker = () => {
     setPlayersConfigured(false);
     setMatchStarted(false);
     setCurrentPeriod(null);
-    setIsRunning(false);
-    setElapsedTime(0);
+    setPeriodStartTimestamp(null);
     setEvents([]);
     setPeriodStarted(false);
 
@@ -803,7 +907,7 @@ const MatchTracker = () => {
       playersConfigured: false,
       matchStarted: false,
       currentPeriod: null,
-      elapsedTime: 0,
+      periodStartTimestamp: null,
       events: [],
       periodStarted: false,
     }));
@@ -918,15 +1022,11 @@ const MatchTracker = () => {
             </div>
 
             {/* Timer Component */}
-            {currentPeriod && (
+            {currentPeriod && periodStartTimestamp && (
               <Timer
                 currentPeriod={currentPeriod}
                 periodLength={periodLength}
-                elapsedTime={elapsedTime}
-                setElapsedTime={setElapsedTime}
-                isRunning={isRunning}
-                onResume={handleResume}
-                onPause={handlePause}
+                periodStartTimestamp={periodStartTimestamp}
                 onEndPeriod={handleEndPeriodClick}
               />
             )}
@@ -1183,20 +1283,45 @@ const MatchTracker = () => {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-3">
-              <button
-                onClick={handleExport}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-200 flex items-center justify-center gap-2"
-              >
-                <Download size={20} />
-                {showCopied ? 'Copied!' : 'Match Data to Clipboard'}
-              </button>
-              <button
-                onClick={handleResetMatch}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg transition duration-200"
-              >
-                Reset Match
-              </button>
+            <div className="flex flex-col gap-3">
+              {/* AI Report Button (Debug Mode Only) */}
+              {debugMode && (
+                <button
+                  onClick={handleGenerateAIReport}
+                  disabled={!events.some(e => e.type === 'match_end') || isGeneratingAI}
+                  className={`w-full font-bold py-3 px-6 rounded-lg transition duration-200 flex items-center justify-center gap-2 ${
+                    !events.some(e => e.type === 'match_end') || isGeneratingAI
+                      ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                      : 'bg-purple-600 hover:bg-purple-700 text-white'
+                  }`}
+                >
+                  <Sparkles size={20} />
+                  {isGeneratingAI
+                    ? 'Generating AI Report...'
+                    : showAICopied
+                    ? 'AI Report Copied!'
+                    : aiError
+                    ? `Error: ${aiError}`
+                    : 'AI Report to Clipboard'}
+                </button>
+              )}
+
+              {/* Regular Export and Reset Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={handleExport}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-200 flex items-center justify-center gap-2"
+                >
+                  <Download size={20} />
+                  {showCopied ? 'Copied!' : 'Match Data to Clipboard'}
+                </button>
+                <button
+                  onClick={handleResetMatch}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg transition duration-200"
+                >
+                  Reset Match
+                </button>
+              </div>
             </div>
           </>
         )}

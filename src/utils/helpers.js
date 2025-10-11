@@ -89,6 +89,37 @@ export const getCurrentTimestamp = () => {
 };
 
 /**
+ * Calculate elapsed seconds from a real-time timestamp to now
+ * @param {number} startTimestamp - Start time in milliseconds (from Date.now())
+ * @returns {number} Elapsed seconds
+ */
+export const getElapsedSeconds = (startTimestamp) => {
+  if (!startTimestamp) return 0;
+  return Math.floor((Date.now() - startTimestamp) / 1000);
+};
+
+/**
+ * Get cumulative elapsed time for display including previous periods
+ * @param {string} currentPeriod - Current period code
+ * @param {number} periodStartTimestamp - When current period started (milliseconds)
+ * @param {number} periodLength - Length of each period in minutes
+ * @returns {string} Formatted cumulative time MM:SS
+ */
+export const getCumulativeTimeFromRealTime = (currentPeriod, periodStartTimestamp, periodLength) => {
+  let previousMinutes = 0;
+
+  if (currentPeriod === 'Q2') previousMinutes = periodLength;
+  else if (currentPeriod === 'Q3') previousMinutes = periodLength * 2;
+  else if (currentPeriod === 'Q4') previousMinutes = periodLength * 3;
+  else if (currentPeriod === 'H2') previousMinutes = periodLength;
+
+  const elapsedSeconds = getElapsedSeconds(periodStartTimestamp);
+  const totalSeconds = (previousMinutes * 60) + elapsedSeconds;
+
+  return formatTime(totalSeconds);
+};
+
+/**
  * Get list of periods based on format
  * @param {boolean} useQuarters - Whether to use quarters (true) or halves (false)
  * @param {number} customPeriods - Optional custom number of periods (1, 2, or 4)
