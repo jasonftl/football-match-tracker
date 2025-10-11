@@ -4,9 +4,10 @@ A Progressive Web App (PWA) for tracking football matches from U7 to Adult level
 
 ## Features
 
+- **Referee/Manager Modes**: Choose between simplified Referee mode or full Manager mode with player tracking
 - **Match Setup**: Configure age group, match format (quarters/halves/custom), and team names
 - **Custom Formats**: Create custom match formats with 1, 2, or 4 periods of any length
-- **Player Management**: Add and manage your team squad list with optional player numbers
+- **Player Management**: Add and manage your team squad list with optional player numbers (Manager mode)
 - **Substitute Tracking**: Mark players as starting or substitutes with green/red toggles
 - **Live Timer**: Track match time with cumulative display across periods
 - **Goal Tracking**: Record goals in real-time with timestamps
@@ -40,22 +41,29 @@ A Progressive Web App (PWA) for tracking football matches from U7 to Adult level
 
 ### 1. Match Setup
 
-1. **Choose Home or Away**: Select whether Caterham Pumas is playing at home or away
-2. **Select Age Group and Format** (displayed on same line):
+1. **Choose Referee or Manager Mode**:
+   - **Referee**: Track match only - no player management or goal scorer details
+   - **Manager**: Full functionality with player setup, goal scorer selection, and substitution tracking
+2. **Choose Home or Away**: Select whether Caterham Pumas is playing at home or away
+3. **Select Age Group and Format** (displayed on same line):
    - **Age Group** (left): Choose from U7 to Adult - simple labels only
    - **Match Format** (right): Shows time details like "4 × 10 min" or "2 × 45 min"
      - Standard formats based on age group
      - "Custom" option available for all ages
-3. **Custom Format** (if selected):
+4. **Custom Format** (if selected):
    - **Periods**: Choose 1, 2, or 4 periods
    - **Period Length**: Set custom duration (auto-calculates initially, then editable)
-4. **Team Names**: Edit team names if needed (auto-populated based on Home/Away selection)
-5. **Continue**: Click "Continue to Player Setup"
+5. **Team Names**: Edit team names if needed (auto-populated based on Home/Away selection)
+6. **Continue**:
+   - Manager mode: Click "Continue to Player Setup"
+   - Referee mode: Click "Start Match Tracker" (skips player setup)
 
-### 2. Player Setup
+### 2. Player Setup (Manager Mode Only)
+
+**Note:** This screen is skipped in Referee mode.
 
 1. **Header Controls** (same row):
-   - **Left**: Toggle explanation - "Toggle: Green = Starting | Red = Sub"
+   - **Left**: Toggle explanation - "Green = Starting (X) | Red = Sub (Y)"
    - **Right**: "Show Player Numbers" toggle - turn on/off number display
 2. **Player List**:
    - Minimum players pre-populated based on age group
@@ -86,8 +94,11 @@ A Progressive Web App (PWA) for tracking football matches from U7 to Adult level
 #### Recording Goals
 
 **During Active Period:**
-- Click "Goal [Team Name]" button immediately when a goal is scored
-- Goal is recorded with current match time
+- **Referee Mode**: Click "Goal [Team Name]" - goal is recorded immediately
+- **Manager Mode**:
+  - Click "Goal [Your Team]" - opens player selection modal to assign scorer and mark penalties
+  - Click "Goal [Opposition]" - goal is recorded immediately
+- Goals are recorded with current match time
 
 **Between Periods (Missed Goals):**
 - Click the orange "Goal [Team Name]" button
@@ -107,7 +118,9 @@ A Progressive Web App (PWA) for tracking football matches from U7 to Adult level
 1. Click the trash (delete) icon on any goal event
 2. Confirm deletion in the popup
 
-#### Managing Substitutions
+#### Managing Substitutions (Manager Mode Only)
+
+**Note:** Substitution tracking is not available in Referee mode.
 
 **During Active Period:**
 - Click purple "Substitutes" button below goal buttons
@@ -165,15 +178,38 @@ The top of the screen shows:
 2. Button shows "Copied!" for 3 seconds
 3. Paste into WhatsApp, notes, or any other app
 
-**Export Format:**
+**Manager Mode Export Format:**
+```
+Caterham Pumas 4–3 Opposition
+
+Starting Lineup:
+#1 John Smith (played 40') (1 goal @ 5')
+#2 Jane Doe (played 30')
+#3 Bob Jones (played 40') (2 goals @ 12', 22'(pen))
+#4 Alice Brown (played 40')
+#5 Charlie Davis (played 40')
+
+Substitutes:
+#6 Emma Wilson (played 10')
+#7 Frank Taylor (played 10')
+
+Q1 Start - 14:30:00 [00:00]
+Goal - Caterham Pumas (#3 Bob Jones) - 14:31:23 [01:23]
+Goal - Opposition - 14:35:15 [05:15]
+SUB OFF: #2 Jane Doe - 14:38:00 [08:00]
+SUB ON: #6 Emma Wilson - 14:38:00 [08:00]
+Q1 End - 14:40:00 [10:00]
+...
+Match End - 15:10:00 [40:00]
+```
+
+**Referee Mode Export Format:**
 ```
 Caterham Pumas 4–3 Opposition
 
 Q1 Start - 14:30:00 [00:00]
-Goal - Caterham Pumas (#7 John Smith) - 14:31:23 [01:23]
+Goal - Caterham Pumas - 14:31:23 [01:23]
 Goal - Opposition - 14:35:15 [05:15]
-SUB OFF: #3 Jane Doe - 14:38:00 [08:00]
-SUB ON: #12 Bob Jones - 14:38:00 [08:00]
 Q1 End - 14:40:00 [10:00]
 ...
 Match End - 15:10:00 [40:00]
