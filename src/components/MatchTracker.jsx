@@ -803,9 +803,24 @@ const MatchTracker = () => {
 
     } catch (error) {
       console.error('Error generating AI report:', error);
+
+      // Copy error details to clipboard for debugging
+      const errorDetails = `AI Report Generation Error\n\n` +
+        `Error: ${error.message || 'Unknown error'}\n` +
+        `Stack: ${error.stack || 'No stack trace'}\n` +
+        `Time: ${new Date().toISOString()}\n\n` +
+        `Match Data Sent:\n${exportText}`;
+
+      navigator.clipboard.writeText(errorDetails).catch(() => {
+        // If clipboard fails, at least show the error
+        console.error('Failed to copy error to clipboard');
+      });
+
       setAIError(error.message || 'Failed to generate AI report');
+      setShowAICopied(true); // Show "Copied!" to indicate error was copied
       setTimeout(() => {
         setAIError(null);
+        setShowAICopied(false);
       }, 5000);
     } finally {
       setIsGeneratingAI(false);
