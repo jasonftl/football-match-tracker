@@ -552,7 +552,24 @@ const MatchTracker = () => {
     const homeGoals = events.filter(e => e.type === 'goal' && e.team === homeTeam);
     const awayGoals = events.filter(e => e.type === 'goal' && e.team === awayTeam);
 
-    let exportText = `${homeTeam} ${homeGoals.length}–${awayGoals.length} ${awayTeam}\n\n`;
+    let exportText = `${homeTeam} ${homeGoals.length}–${awayGoals.length} ${awayTeam}\n`;
+
+    // Add goal scorers if any goals
+    if (homeGoals.length > 0 || awayGoals.length > 0) {
+      const homeScorers = formatGoalScorers(homeGoals);
+      const awayScorers = formatGoalScorers(awayGoals);
+      const maxLines = Math.max(homeScorers.length, awayScorers.length);
+
+      for (let i = 0; i < maxLines; i++) {
+        const homeLine = homeScorers[i] || '';
+        const awayLine = awayScorers[i] || '';
+        // Pad home line to align with away line
+        const paddedHomeLine = homeLine.padEnd(20, ' ');
+        exportText += `${paddedHomeLine} ${awayLine}\n`;
+      }
+    }
+
+    exportText += '\n';
 
     // Helper function to convert timerValue (MM:SS) to seconds
     const timeToSeconds = (timerValue) => {
@@ -766,7 +783,24 @@ const MatchTracker = () => {
     const homeGoals = events.filter(e => e.type === 'goal' && e.team === homeTeam);
     const awayGoals = events.filter(e => e.type === 'goal' && e.team === awayTeam);
 
-    let exportText = `${homeTeam} ${homeGoals.length}–${awayGoals.length} ${awayTeam}\n\n`;
+    let exportText = `${homeTeam} ${homeGoals.length}–${awayGoals.length} ${awayTeam}\n`;
+
+    // Add goal scorers if any goals
+    if (homeGoals.length > 0 || awayGoals.length > 0) {
+      const homeScorers = formatGoalScorers(homeGoals);
+      const awayScorers = formatGoalScorers(awayGoals);
+      const maxLines = Math.max(homeScorers.length, awayScorers.length);
+
+      for (let i = 0; i < maxLines; i++) {
+        const homeLine = homeScorers[i] || '';
+        const awayLine = awayScorers[i] || '';
+        // Pad home line to align with away line
+        const paddedHomeLine = homeLine.padEnd(20, ' ');
+        exportText += `${paddedHomeLine} ${awayLine}\n`;
+      }
+    }
+
+    exportText += '\n';
 
     // Helper function to convert timerValue (MM:SS) to seconds
     const timeToSeconds = (timerValue) => {
@@ -939,8 +973,8 @@ const MatchTracker = () => {
         timestamp: getCurrentTimestamp(),
         timerValue: formatTime(cumulativeTime),
         description: change.from === 'starting'
-          ? `SUB OFF: ${showNumbers && change.player.number ? `#${change.player.number} ` : ''}${change.player.name || `Player ${change.player.number}`}`
-          : `SUB ON: ${showNumbers && change.player.number ? `#${change.player.number} ` : ''}${change.player.name || `Player ${change.player.number}`}`,
+          ? `SUB OFF: ${change.player.name || `Player ${change.player.number}`}`
+          : `SUB ON: ${change.player.name || `Player ${change.player.number}`}`,
         playerNumber: change.player.number,
         playerName: change.player.name,
         subType: change.from === 'starting' ? 'off' : 'on'
@@ -1021,6 +1055,32 @@ const MatchTracker = () => {
   const homeGoals = events.filter(e => e.type === 'goal' && e.team === homeTeam);
   const awayGoals = events.filter(e => e.type === 'goal' && e.team === awayTeam);
 
+  // Helper function to group goals by scorer
+  const formatGoalScorers = (goals) => {
+    // Group goals by player
+    const scorerMap = new Map();
+
+    goals.forEach(goal => {
+      const minute = calculateMatchMinute(goal.timerValue, goal.period, periodLength);
+      const minuteStr = goal.isPenalty ? `${minute}'(pen)` : `${minute}'`;
+      const scorerKey = goal.playerName || '__unknown__';
+
+      if (!scorerMap.has(scorerKey)) {
+        scorerMap.set(scorerKey, []);
+      }
+      scorerMap.get(scorerKey).push(minuteStr);
+    });
+
+    // Format as lines
+    return Array.from(scorerMap.entries()).map(([name, minutes]) => {
+      if (name === '__unknown__') {
+        // No name, just show times
+        return `(${minutes.join(', ')})`;
+      }
+      return `${name} (${minutes.join(', ')})`;
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 p-3 sm:p-4">
       <div className="max-w-2xl mx-auto bg-gray-800 rounded-lg shadow-lg p-4 sm:p-6">
@@ -1080,27 +1140,27 @@ const MatchTracker = () => {
           <>
             {/* Match Summary */}
             <div className="bg-gray-700 p-3 sm:p-4 rounded-lg mb-4 sm:mb-6" key={`summary-${refreshKey}`}>
-              <div className="text-center">
-                <div className="flex justify-center items-center mb-2">
+              <div>
+                <div className="flex justify-center items-center mb-3">
                   <span className="text-sm sm:text-lg font-bold text-gray-100 text-right flex-1 truncate">{homeTeam}</span>
                   <span className="text-base sm:text-lg font-bold text-orange-500 px-2 whitespace-nowrap">{homeGoals.length}–{awayGoals.length}</span>
                   <span className="text-sm sm:text-lg font-bold text-gray-100 text-left flex-1 truncate">{awayTeam}</span>
                 </div>
-                <div className="flex justify-center items-start font-mono text-xs sm:text-sm text-gray-400">
-                  <span className="text-right flex-1">
-                    {homeGoals.length > 0 && `(${homeGoals.map(g => {
-                      const minute = calculateMatchMinute(g.timerValue, g.period, periodLength);
-                      return g.isPenalty ? `${minute}'(pen)` : `${minute}'`;
-                    }).join(', ')})`}
-                  </span>
-                  <span className="px-4" style={{minWidth: '60px'}}></span>
-                  <span className="text-left flex-1">
-                    {awayGoals.length > 0 && `(${awayGoals.map(g => {
-                      const minute = calculateMatchMinute(g.timerValue, g.period, periodLength);
-                      return g.isPenalty ? `${minute}'(pen)` : `${minute}'`;
-                    }).join(', ')})`}
-                  </span>
-                </div>
+                {(homeGoals.length > 0 || awayGoals.length > 0) && (
+                  <div className="flex justify-start items-start text-xs sm:text-sm text-gray-400">
+                    <div className="flex-1 text-right italic pr-2">
+                      {formatGoalScorers(homeGoals).map((line, idx) => (
+                        <div key={idx}>{line}</div>
+                      ))}
+                    </div>
+                    <div className="px-2 whitespace-nowrap" style={{minWidth: '60px'}}></div>
+                    <div className="flex-1 text-left italic">
+                      {formatGoalScorers(awayGoals).map((line, idx) => (
+                        <div key={idx}>{line}</div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1352,19 +1412,21 @@ const MatchTracker = () => {
                       <>
                         <div className="flex-1">
                           <p className="font-medium text-gray-100">
-                            {event.type === 'goal' && event.playerName ? (
+                            {event.type === 'goal' ? (
                               <>
-                                {event.description} - {showNumbers && event.playerNumber ? `#${event.playerNumber} ` : ''}{event.playerName}
+                                {event.description}
+                                {event.playerName && ` - ${event.playerName}`}
                                 {event.isPenalty && (
                                   <span className="text-yellow-400 ml-2">(Penalty)</span>
                                 )}
                               </>
+                            ) : event.type === 'substitution' ? (
+                              <>
+                                {event.subType === 'on' ? 'SUB ON' : 'SUB OFF'}: {event.playerName || `Player ${event.playerNumber}`}
+                              </>
                             ) : (
                               <>
                                 {event.description}
-                                {event.type === 'goal' && event.isPenalty && (
-                                  <span className="text-yellow-400 ml-2">(Penalty)</span>
-                                )}
                               </>
                             )}
                           </p>

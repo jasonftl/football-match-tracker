@@ -36,41 +36,41 @@ const UserAgreementModal = ({ isOpen, onAccept }) => {
           </p>
 
           <div className="bg-gray-700 p-4 rounded-lg space-y-3">
+            <p className="text-sm text-gray-300 mb-3">
+              <strong>This is an independent volunteer hobby project.</strong>
+            </p>
+
             <h3 className="text-lg font-bold text-orange-500">1. Data Storage & Responsibility</h3>
             <ul className="list-disc ml-5 space-y-1">
               <li>Match data is stored locally on your device</li>
-              <li>You are responsible for the data you enter</li>
+              <li>You are responsible for any personal data you enter</li>
+              <li>The app's developer does not collect, view, or store any match data</li>
               <li>Clearing browser data will delete all match information</li>
-              <li>You accept responsibility for backing up important data</li>
             </ul>
 
-            <h3 className="text-lg font-bold text-orange-500 mt-4">2. Online Features & Data Collection</h3>
+            <h3 className="text-lg font-bold text-orange-500 mt-4">2. Online Features</h3>
             <ul className="list-disc ml-5 space-y-1">
               <li>App hosted on Vercel - may collect anonymous usage analytics</li>
               <li>No personally identifiable information collected via analytics</li>
-              <li><strong className="text-yellow-400">AI Match Report feature sends match data to third-party AI service</strong></li>
-              <li><strong className="text-yellow-400">Data sent to AI may be used for AI model training</strong></li>
-              <li>AI features require internet connection</li>
+              <li>Optional AI Match Report feature sends match data to OpenRouter's AI service</li>
+              <li>Data sent to AI may be processed for improving their models</li>
             </ul>
             <p className="text-xs text-gray-400 mt-2">
               Privacy Policies: Vercel (<span className="text-gray-300">https://vercel.com/legal/privacy-policy</span>), OpenRouter (<span className="text-gray-300">https://openrouter.ai/privacy</span>)
             </p>
 
-            <h3 className="text-lg font-bold text-orange-500 mt-4">3. Parental Notification & Privacy</h3>
-            <p className="text-yellow-400 font-bold">⚠️ IMPORTANT - You MUST:</p>
+            <h3 className="text-lg font-bold text-orange-500 mt-4">3. Data Protection Tips</h3>
             <ul className="list-disc ml-5 space-y-1">
-              <li><strong>Notify parents/guardians before using AI features that you will be using first names (not full names)</strong></li>
-              <li><strong>Inform parents that data will be sent to AI service</strong></li>
-              <li><strong>Explain that AI may use this data for training</strong></li>
-              <li><strong>Use first names only (NOT full names) when using AI features</strong></li>
-              <li>Comply with applicable data protection laws (GDPR, etc.)</li>
+              <li>Use first names only (e.g., "John" not "John Smith") to minimise identifiable data</li>
+              <li>Clear old match data you no longer need</li>
+              <li>Ensure your use complies with applicable laws and regulations</li>
             </ul>
 
             <h3 className="text-lg font-bold text-orange-500 mt-4">4. No Warranty & Liability</h3>
             <ul className="list-disc ml-5 space-y-1">
               <li>App provided "as is" without warranty of any kind</li>
               <li>We are not responsible for data loss, errors, or issues</li>
-              <li>We are not liable for how third-party services handle your data</li>
+              <li>We are not liable for how third-party services handle data</li>
               <li>You use this app entirely at your own risk</li>
             </ul>
 
@@ -79,18 +79,17 @@ const UserAgreementModal = ({ isOpen, onAccept }) => {
               <p className="font-bold text-white">By clicking "I Agree", you confirm that:</p>
               <ul className="list-disc ml-5 space-y-1 mt-2">
                 <li>You have read and understood these terms</li>
-                <li>You will notify parents/guardians before using AI features</li>
-                <li>You will use first names only (not full names) with AI features</li>
-                <li>You understand AI data may be used for training</li>
+                <li>You will use first names only to minimise identifiable data</li>
+                <li>You understand the optional AI feature sends data to third-party services</li>
                 <li>You accept the app "as is" with no warranty</li>
                 <li>You are old enough to enter into this agreement</li>
               </ul>
             </div>
           </div>
 
-          <div className="bg-yellow-900 border-2 border-yellow-500 rounded-lg p-4 mt-4">
-            <p className="text-yellow-200 font-bold text-center">
-              ⚠️ If you do not agree to these terms, click "I Do Not Agree" and do not use this application.
+          <div className="bg-gray-600 border border-gray-500 rounded-lg p-4 mt-4">
+            <p className="text-gray-200 text-center">
+              If you do not agree to these terms, click "I Do Not Agree".
             </p>
           </div>
         </div>

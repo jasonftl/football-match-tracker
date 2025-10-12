@@ -181,14 +181,16 @@ const AboutModal = ({ isOpen, onClose }) => {
               <li>Export match data before resetting</li>
               <li>Review and edit any incorrect times or player assignments</li>
               <li>Share the exported data with parents/coaches</li>
-              <li>If using AI reports: ensure you have notified parents and used first names only</li>
+              <li>If using AI reports: use first names only to minimise identifiable data</li>
               <li>Consider clearing old match data you no longer need</li>
             </ul>
           </div>
 
-          <h4 className="text-xl font-bold text-orange-500 mt-6">Privacy & Data Collection</h4>
+          <h4 className="text-xl font-bold text-orange-500 mt-6">Data Use & Responsibility</h4>
 
           <div className="text-sm space-y-3">
+            <p className="font-bold text-gray-200">This is an independent volunteer hobby project.</p>
+
             <p className="font-bold text-gray-200 mt-3">Local Data Storage:</p>
             <ul className="list-disc ml-5 space-y-1">
               <li>All core match data is stored locally on your device</li>
@@ -202,46 +204,41 @@ const AboutModal = ({ isOpen, onClose }) => {
               <li>App hosted on Vercel platform</li>
               <li>May collect anonymous usage analytics (page views, performance)</li>
               <li>No personally identifiable information collected</li>
-              <li>Analytics help improve app performance</li>
             </ul>
             <p className="text-xs text-gray-400 mt-1">
               Privacy Policy: <span className="text-gray-300">https://vercel.com/legal/privacy-policy</span>
             </p>
 
-            <p className="font-bold text-gray-200 mt-3">AI Match Report Feature:</p>
-            <p className="text-yellow-400 font-bold">⚠️ Important Privacy Notice:</p>
+            <p className="font-bold text-gray-200 mt-3">AI Match Report Feature (Optional):</p>
             <ul className="list-disc ml-5 space-y-1">
-              <li><strong>Match data including player names is sent to AI service</strong></li>
-              <li>Data may be used by AI provider for model training</li>
-              <li>You MUST notify parents/guardians that you will be using first names (not full names) and that AI may use this data for training</li>
-              <li>Feature is optional (must be enabled in settings below)</li>
+              <li>When you choose to use this feature, match data (team names, first names, match events) is sent to OpenRouter's AI service</li>
+              <li>Data may be processed by the AI provider for improving their models</li>
+              <li>Feature must be enabled in settings below</li>
             </ul>
             <p className="text-xs text-gray-400 mt-1">
               Privacy Policy: <span className="text-gray-300">https://openrouter.ai/privacy</span>
             </p>
 
-            <p className="font-bold text-gray-200 mt-3">Your Responsibilities:</p>
+            <p className="font-bold text-gray-200 mt-3">Data Protection Tips:</p>
             <ul className="list-disc ml-5 space-y-1">
-              <li>✅ Notify parents/guardians that you will be using first names (not full names)</li>
-              <li>✅ Inform parents data will be sent to AI service</li>
-              <li>✅ Explain data may be used for AI training</li>
-              <li>✅ Use first names only (e.g., "John" not "John Smith")</li>
-              <li>✅ Clear old match data you no longer need</li>
+              <li>Use first names only (e.g., "John" not "John Smith") to minimise identifiable data</li>
+              <li>Clear old match data you no longer need</li>
+              <li>You are responsible for any personal data you include</li>
+              <li>The app's developer does not collect, view, or store any match data</li>
             </ul>
           </div>
 
           <h4 className="text-xl font-bold text-orange-500 mt-6">User Agreement</h4>
           <div className="bg-gray-700 p-4 rounded-lg text-sm space-y-2">
-            <p className="font-bold text-yellow-400">By using this app, you agree to:</p>
+            <p className="font-bold text-gray-200">By using this app, you agree to:</p>
             <ol className="list-decimal ml-5 space-y-1">
-              <li>Take responsibility for data you enter</li>
-              <li>Notify parents/guardians before using AI features that you will be using first names (not full names) and that AI may use this data for training</li>
-              <li>Use first names only (not full names) with AI features</li>
-              <li>Understand data may be used for AI training</li>
+              <li>Take responsibility for any personal data you enter</li>
+              <li>Use first names only (not full names) to minimise identifiable data</li>
+              <li>Understand that the optional AI feature sends data to third-party services</li>
               <li>Accept the app "as is" with no warranty</li>
-              <li>Comply with applicable data protection laws</li>
+              <li>Ensure your use complies with applicable laws and regulations</li>
             </ol>
-            <p className="text-yellow-400 font-bold mt-3">
+            <p className="text-gray-300 mt-3">
               If you do not agree, do not use this application.
             </p>
           </div>
@@ -289,9 +286,9 @@ const AboutModal = ({ isOpen, onClose }) => {
           <p className="text-xs text-gray-400 mt-2">
             {aiEnabled ? 'AI report button enabled' : 'AI report button disabled'}
           </p>
-          <div className="bg-yellow-900 border border-yellow-600 rounded p-3 mt-3">
-            <p className="text-xs text-yellow-200">
-              <strong>⚠️ Privacy Reminder:</strong> When enabled, match data including player names will be sent to AI service and may be used for training. You must notify parents/guardians and use first names only.
+          <div className="bg-blue-900 border border-blue-600 rounded p-3 mt-3">
+            <p className="text-xs text-blue-200">
+              <strong>Privacy Note:</strong> When enabled, match data (including first names) will be sent to OpenRouter's AI service and may be used for improving their models. Use first names only to minimise identifiable data.
             </p>
           </div>
         </div>

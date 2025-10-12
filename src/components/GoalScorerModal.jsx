@@ -119,9 +119,9 @@ const GoalScorerModal = ({
         <div className="grid grid-cols-3 gap-2 sm:gap-3">
           <button
             onClick={handleNoScorer}
-            className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2.5 sm:py-3 px-2 sm:px-4 rounded-lg transition duration-200 text-xs sm:text-base"
+            className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2.5 sm:py-3 px-1 sm:px-4 rounded-lg transition duration-200 text-xs sm:text-base leading-tight"
           >
-            No Scorer
+            Will update later
           </button>
           <button
             onClick={handleCancel}

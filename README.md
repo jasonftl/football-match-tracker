@@ -163,15 +163,21 @@ A Progressive Web App (PWA) for tracking football matches from U7 to Adult level
 
 The top of the screen shows:
 - Current score (e.g., "Caterham Pumas 4–3 Opposition")
-- Goal times with penalty indicators (e.g., "1', 5'(pen), 12', 31'")
+- Goal scorers grouped by player name below the score
+- Each scorer on their own line with times: "Oliver (58', 60')"
+- Penalties marked as: "Eddie (65'(pen))"
+- Goals without assigned scorer show only times: "(29', 50')"
+- Home team scorers right-aligned, away team scorers left-aligned
 - Updates automatically when goals are edited or deleted
 
 #### Match Events
 
 - Chronological list of all events (period starts/ends, goals, substitutions, match end)
 - Shows real clock time and elapsed match time
+- Goal events show player first names (no numbers in events list)
+- Penalty goals marked with "(Penalty)" in yellow
+- Substitutions show as "SUB ON: John" or "SUB OFF: Jane" (first names only)
 - Scroll to view all events
-- Substitutions show as "SUB ON" or "SUB OFF" with player details
 
 ### 4. After the Match
 
@@ -184,6 +190,9 @@ The top of the screen shows:
 **Manager Mode Export Format:**
 ```
 Caterham Pumas 4–3 Opposition
+John (5')          (12')
+Bob (12', 22'(pen))
+Emma (32')
 
 Starting Lineup:
 #1 John Smith (played 40') (1 goal @ 5')
@@ -193,14 +202,14 @@ Starting Lineup:
 #5 Charlie Davis (played 40')
 
 Substitutes:
-#6 Emma Wilson (played 10')
+#6 Emma Wilson (played 10') (1 goal @ 32')
 #7 Frank Taylor (played 10')
 
 Q1 Start - 14:30:00 [00:00]
-Goal - Caterham Pumas (#3 Bob Jones) - 14:31:23 [01:23]
+Goal - Caterham Pumas - John - 14:31:23 [01:23]
 Goal - Opposition - 14:35:15 [05:15]
-SUB OFF: #2 Jane Doe - 14:38:00 [08:00]
-SUB ON: #6 Emma Wilson - 14:38:00 [08:00]
+SUB OFF: Jane - 14:38:00 [08:00]
+SUB ON: Emma - 14:38:00 [08:00]
 Q1 End - 14:40:00 [10:00]
 ...
 Match End - 15:10:00 [40:00]
@@ -209,6 +218,7 @@ Match End - 15:10:00 [40:00]
 **Referee Mode Export Format:**
 ```
 Caterham Pumas 4–3 Opposition
+(1', 5', 12')      (3', 8')
 
 Q1 Start - 14:30:00 [00:00]
 Goal - Caterham Pumas - 14:31:23 [01:23]
@@ -220,10 +230,10 @@ Match End - 15:10:00 [40:00]
 
 #### Generate AI Match Report
 
-**Note:** This feature requires internet connection and must be enabled in debug mode (via About modal).
+**Note:** This optional feature requires internet connection and must be enabled in the About modal (Info button).
 
 1. Complete the match (reach full time)
-2. Enable debug mode in the About modal (Info button)
+2. Enable AI features in the About modal (Info button)
 3. Purple "AI Report to Clipboard" button appears
 4. Click button to generate narrative match report
 5. AI-generated report automatically copied to clipboard
@@ -236,12 +246,11 @@ Match End - 15:10:00 [40:00]
 - Highlights teamwork, effort, and key moments
 - Takes 5-15 seconds to generate
 
-**Important Privacy Note:**
-- **Match data including player names is sent to AI service**
-- Data may be used by AI provider for model training
-- **You must notify parents/guardians that you will be using first names (not full names) and that AI may use this data for training**
-- Consider data sensitivity before generating AI reports
-- Feature is optional - traditional export still available
+**Privacy Note:**
+- Match data (including first names) is sent to OpenRouter's AI service
+- Data may be processed by the AI provider for improving their models
+- Use first names only (not full names) to minimize identifiable data
+- Traditional export is always available without using AI
 
 #### Reset Match
 
@@ -282,7 +291,7 @@ Match End - 15:10:00 [40:00]
 - Export match data before resetting
 - Review and edit any incorrect times or player assignments
 - Share the exported data with parents/coaches
-- If using AI reports: ensure you have notified parents and used first names only
+- If using AI reports: use first names only to minimize identifiable data
 - Consider clearing old match data you no longer need
 
 ## Age Group Defaults
@@ -335,121 +344,78 @@ Match End - 15:10:00 [40:00]
 - **Firefox**: 88+
 - **Edge**: 90+
 
-## Privacy & Data Collection
+## Data Use & Responsibility
+
+**This is an independent volunteer hobby project.**
 
 ### Local Data Storage
 
-- **All core match data is stored locally** on your device in browser localStorage
+- All core match data is stored locally on your device
 - Player names, numbers, match events, and scores remain on your device
-- **No data is sent to any server** for offline functionality
+- The app's developer does not collect, view, or store any match data
 - No account or login required
-- Data persists until you clear browser data or reset the match
+- Clearing browser data will delete all match information
 
-### Online Features & Data Collection
+### Online Features
 
 #### Vercel Hosting & Analytics
 
-This app is hosted on Vercel, which may collect anonymous usage analytics:
-- **Page views** and **performance metrics**
-- **Geographic region** (country/region level only, no precise location)
-- **Device type** (mobile/desktop/tablet)
-- **No personally identifiable information is collected**
-- No tracking of player names, match data, or specific content
-- Analytics help improve app performance and user experience
+This app is hosted on Vercel, which may collect anonymous usage analytics (page views, performance). No personally identifiable information is collected.
 
 **Privacy Policy:** https://vercel.com/legal/privacy-policy
 
-#### AI Match Report Generation
+#### AI Match Report Generation (Optional Feature)
 
-**When you use the "AI Report to Clipboard" feature:**
-- Complete match data is sent from your device to our Vercel serverless function
-- Data is then forwarded to OpenRouter AI API for processing
-- **Data sent includes:**
-  - Team names
-  - Player names (as you entered them)
-  - Goals, substitutions, and all match events
-  - Timestamps and match details
-- **Important:**
-  - **Data may be used by the AI provider (OpenRouter/model provider) for training AI models**
-  - This data is sent over the internet and processed by third-party AI services
-  - Once sent, we cannot control how the AI provider uses the data
+When you choose to use the "AI Report to Clipboard" feature:
+- Match data (team names, first names, match events) is sent to OpenRouter's AI service
+- Data may be processed by the AI provider for improving their models
+- See OpenRouter's privacy policy: https://openrouter.ai/privacy
 
-**Privacy Policy:** https://openrouter.ai/privacy
+### Data Protection Tips
 
-#### Your Responsibilities
-
-**Before using AI features, you MUST:**
-1. ✅ Notify parents/guardians that you will be using first names (not full names)
-2. ✅ Inform parents that data will be sent to AI service
-3. ✅ Explain that data may be used for AI training
-4. ✅ **Use first names only - DO NOT use full names**
-5. ✅ Consider whether the data is appropriate to share
-
-**Best Practices:**
-- Use "John" not "John Smith"
-- Use initials if preferred: "J.S."
-- Avoid any sensitive or identifying information
-- Remember: Once data is sent, it cannot be recalled
-- When in doubt, use the standard "Match Data to Clipboard" feature instead
-
-### Data Protection
-
-- Clear old match data regularly
-- Be mindful when copying data to clipboard (can be accidentally shared)
-- Do not enter sensitive or confidential information
-- Remember that exported/clipboard data can be shared anywhere
-- You are responsible for notifying parents/guardians before sharing player data
+- Use first names only (e.g., "John" not "John Smith") to minimize identifiable data
+- Clear old match data you no longer need
+- Ensure your use complies with applicable laws and regulations
 
 ## User Agreement
 
-**By using this application, you agree to the following terms:**
+**By using this application, you confirm that:**
 
-### 1. Data Storage and Responsibility
+### 1. Data Storage & Responsibility
 
-- You understand that match data is stored locally on your device
-- You are responsible for the data you enter into the app
-- You understand that clearing browser data will delete all match information
-- You accept responsibility for backing up important match data
+- Match data is stored locally on your device
+- You are responsible for any personal data you enter
+- The app's developer does not collect, view, or store any match data
+- Clearing browser data will delete all match information
 
-### 2. Online Features and Data Transmission
+### 2. Online Features
 
-- You understand that the AI Match Report feature sends data to third-party services
-- You acknowledge that data sent to AI services may be used for AI model training
-- You agree to notify parents/guardians before using AI features with players' data
-- You understand that Vercel may collect anonymous usage analytics
+- App hosted on Vercel - may collect anonymous usage analytics
+- No personally identifiable information collected via analytics
+- Optional AI Match Report feature sends match data to OpenRouter's AI service
+- Data sent to AI may be processed for improving their models
 
-### 3. Parental Notification and Player Privacy
+### 3. Data Protection Tips
 
-- You agree to notify parents/guardians before using the AI Report feature that:
-  - You will be using first names only (not full names)
-  - Data will be sent to AI service
-  - AI may use this data for training purposes
-- You agree to use first names only (not full names) when using AI features
-- You understand that you are solely responsible for compliance with data protection laws
+- Use first names only (e.g., "John" not "John Smith") to minimize identifiable data
+- Clear old match data you no longer need
+- Ensure your use complies with applicable laws and regulations
 
-### 4. No Warranty
+### 4. No Warranty & Liability
 
-- This app is provided "as is" without warranty of any kind
-- We do not guarantee accuracy, reliability, or fitness for any purpose
-- We are not responsible for any data loss, errors, or issues arising from use
+- App provided "as is" without warranty of any kind
+- We are not responsible for data loss, errors, or issues
+- We are not liable for how third-party services handle data
 - You use this app entirely at your own risk
 
-### 5. Liability
+### 5. Your Confirmation
 
-- We are not liable for any damages arising from use of this app
-- We are not responsible for how third-party services (AI providers, Vercel) handle data
-- You are responsible for ensuring your use complies with applicable laws and regulations
-
-### 6. Changes to Terms
-
-- These terms may be updated at any time
-- Continued use of the app constitutes acceptance of updated terms
-- You can review these terms anytime in the About section (Info button)
-
-### 7. Age and Capacity
-
-- By using this app, you confirm you are old enough to enter into this agreement
-- If using for youth sports, you confirm you have authority to collect and process player data
+By using this app, you confirm that:
+- You have read and understood these terms
+- You will use first names only to minimize identifiable data
+- You understand the optional AI feature sends data to third-party services
+- You accept the app "as is" with no warranty
+- You are old enough to enter into this agreement
 
 **If you do not agree to these terms, do not use this application.**
 
