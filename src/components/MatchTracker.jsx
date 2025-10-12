@@ -1228,6 +1228,40 @@ const MatchTracker = () => {
     setShowUserAgreement(false);
   };
 
+  // Helper function to record goal with random time within a period
+  const recordGoalWithRandomTime = (team, period, scorerInfo = null) => {
+    const periodStartTime = Date.now();
+
+    // Calculate random time within the period (in seconds)
+    const periodLengthInSeconds = periodLength * 60;
+    const randomSeconds = Math.floor(Math.random() * periodLengthInSeconds);
+
+    // Calculate cumulative time based on period
+    let previousMinutes = 0;
+    if (period === 'Q2') previousMinutes = periodLength;
+    else if (period === 'Q3') previousMinutes = periodLength * 2;
+    else if (period === 'Q4') previousMinutes = periodLength * 3;
+    else if (period === 'H2') previousMinutes = periodLength;
+
+    const cumulativeTime = (previousMinutes * 60) + randomSeconds;
+
+    // Create goal event with randomized time
+    const goalEvent = {
+      id: Date.now() + Math.random(),
+      type: 'goal',
+      team: team,
+      period: period,
+      timestamp: getCurrentTimestamp(),
+      timerValue: formatTime(cumulativeTime),
+      description: `Goal - ${team}`,
+      playerNumber: scorerInfo?.playerNumber || null,
+      playerName: scorerInfo?.playerName || null,
+      isPenalty: scorerInfo?.isPenalty || false,
+    };
+
+    setEvents((prevEvents) => [...prevEvents, goalEvent]);
+  };
+
   // Simulate Match handler (Debug Mode Only)
   const handleSimulateMatch = async () => {
     const firstNames = ['Alex', 'Sam', 'Jordan', 'Taylor', 'Morgan', 'Casey', 'Riley', 'Jamie', 'Avery', 'Quinn', 'Parker', 'Reese'];
@@ -1250,7 +1284,8 @@ const MatchTracker = () => {
 
     setPlayers(simulatedPlayers);
 
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // Increase delay to allow React state to fully update
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     // 3. Proceed to main tracking screen
     setPlayersConfigured(true);
@@ -1267,10 +1302,10 @@ const MatchTracker = () => {
 
     await new Promise(resolve => setTimeout(resolve, 200));
 
-    // 5. Score a goal for home team (random starting player)
+    // 5. Score a goal for home team (random starting player) with randomized time
     const homeStartingPlayers = simulatedPlayers.filter(p => !p.isSub);
     const homeScorer = homeStartingPlayers[Math.floor(Math.random() * homeStartingPlayers.length)];
-    handleRecordGoal(homeTeam, firstPeriod, {
+    recordGoalWithRandomTime(homeTeam, firstPeriod, {
       playerNumber: homeScorer.number,
       playerName: homeScorer.name,
       isPenalty: false
@@ -1278,8 +1313,8 @@ const MatchTracker = () => {
 
     await new Promise(resolve => setTimeout(resolve, 200));
 
-    // 6. Score a goal for away team
-    handleRecordGoal(awayTeam, firstPeriod);
+    // 6. Score a goal for away team with randomized time
+    recordGoalWithRandomTime(awayTeam, firstPeriod);
 
     await new Promise(resolve => setTimeout(resolve, 200));
 
@@ -1335,10 +1370,10 @@ const MatchTracker = () => {
 
     await new Promise(resolve => setTimeout(resolve, 200));
 
-    // 11. Score penalty for home team (random starting player)
+    // 11. Score penalty for home team (random starting player) with randomized time
     const currentStarting = simulatedPlayers.filter(p => !p.isSub);
     const homePenaltyScorer = currentStarting[Math.floor(Math.random() * currentStarting.length)];
-    handleRecordGoal(homeTeam, periods[thirdPeriodIndex], {
+    recordGoalWithRandomTime(homeTeam, periods[thirdPeriodIndex], {
       playerNumber: homePenaltyScorer.number,
       playerName: homePenaltyScorer.name,
       isPenalty: true
@@ -1346,8 +1381,8 @@ const MatchTracker = () => {
 
     await new Promise(resolve => setTimeout(resolve, 200));
 
-    // 12. Score penalty for away team
-    handleRecordGoal(awayTeam, periods[thirdPeriodIndex], { isPenalty: true });
+    // 12. Score penalty for away team with randomized time
+    recordGoalWithRandomTime(awayTeam, periods[thirdPeriodIndex], { isPenalty: true });
 
     await new Promise(resolve => setTimeout(resolve, 200));
 
