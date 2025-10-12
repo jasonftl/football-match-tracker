@@ -30,7 +30,7 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'cognitivecomputations/dolphin-mistral-24b-venice-edition:free',
+        model: 'deepseek/deepseek-v3.1-terminus',
         messages: [
           {
             role: 'system',
