@@ -779,41 +779,13 @@ const MatchTracker = () => {
 
   // AI Report handler
   const handleGenerateAIReport = async () => {
-    // Generate match data first (reuse export logic)
+    // Generate simple event-based match data for AI
     const homeGoals = events.filter(e => e.type === 'goal' && e.team === homeTeam);
     const awayGoals = events.filter(e => e.type === 'goal' && e.team === awayTeam);
 
-    let exportText = `${homeTeam} ${homeGoals.length}–${awayGoals.length} ${awayTeam}\n`;
+    let exportText = `${homeTeam} ${homeGoals.length}–${awayGoals.length} ${awayTeam}\n\n`;
 
-    // Add goal scorers if any goals
-    if (homeGoals.length > 0 || awayGoals.length > 0) {
-      const homeScorers = formatGoalScorers(homeGoals);
-      const awayScorers = formatGoalScorers(awayGoals);
-      const maxLines = Math.max(homeScorers.length, awayScorers.length);
-
-      for (let i = 0; i < maxLines; i++) {
-        const homeLine = homeScorers[i] || '';
-        const awayLine = awayScorers[i] || '';
-        // Pad home line to align with away line
-        const paddedHomeLine = homeLine.padEnd(20, ' ');
-        exportText += `${paddedHomeLine} ${awayLine}\n`;
-      }
-    }
-
-    exportText += '\n';
-
-    // Helper function to convert timerValue (MM:SS) to seconds
-    const timeToSeconds = (timerValue) => {
-      const parts = timerValue.split(':');
-      return parseInt(parts[0]) * 60 + parseInt(parts[1]);
-    };
-
-    // Get match end time (in seconds)
-    const matchEndEvent = events.find(e => e.type === 'match_end');
-    const matchEndSeconds = matchEndEvent ? timeToSeconds(matchEndEvent.timerValue) :
-      (events.filter(e => e.type === 'period_end').length * periodLength * 60);
-
-    // Similar logic to export (abbreviated for AI input)
+    // Add all match events in chronological order (simple format)
     events.forEach(event => {
       if (event.type === 'period_start' || event.type === 'period_end') {
         exportText += `${event.description} - ${event.timestamp} [${event.timerValue}]\n`;
