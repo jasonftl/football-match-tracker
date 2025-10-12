@@ -88,6 +88,9 @@ const MatchTracker = () => {
   const [showAICopied, setShowAICopied] = useState(false);
   const [aiError, setAIError] = useState(null);
   const [aiReport, setAiReport] = useState(null);
+  const [isGeneratingWeather, setIsGeneratingWeather] = useState(false);
+  const [weatherError, setWeatherError] = useState(null);
+  const [weatherReport, setWeatherReport] = useState(null);
 
   // State for goal button feedback
   const [goalButtonFeedback, setGoalButtonFeedback] = useState({ home: false, away: false });
@@ -786,6 +789,15 @@ const MatchTracker = () => {
       }
     });
 
+    // Append Weather Report if available
+    if (weatherReport) {
+      exportText += '\n';
+      exportText += '='.repeat(50) + '\n';
+      exportText += 'WEATHER REPORT\n';
+      exportText += '='.repeat(50) + '\n\n';
+      exportText += weatherReport + '\n';
+    }
+
     // Append AI Report if available
     if (aiReport) {
       exportText += '\n';
@@ -823,6 +835,132 @@ const MatchTracker = () => {
     setShowMatchDataView(false);
     setShowCopied(false);
     setAIError(null);
+    setWeatherError(null);
+  };
+
+  // Weather Report handler
+  const handleGenerateWeatherReport = async () => {
+    setIsGeneratingWeather(true);
+    setWeatherError(null);
+
+    try {
+      // Get user's location using browser Geolocation API
+      const position = await new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+          reject(new Error('Geolocation not supported'));
+          return;
+        }
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: false,
+          timeout: 10000,
+          maximumAge: 300000 // Cache for 5 minutes
+        });
+      });
+
+      const { latitude, longitude } = position.coords;
+
+      // Get the match start time (first period start event)
+      const matchStartEvent = events.find(e => e.type === 'period_start');
+      if (!matchStartEvent) {
+        throw new Error('No match start time found');
+      }
+
+      // Parse the timestamp (HH:MM:SS format)
+      const [hours, minutes] = matchStartEvent.timestamp.split(':').map(Number);
+      const matchDate = new Date();
+      matchDate.setHours(hours, minutes, 0, 0);
+
+      // Format date for Open-Meteo API (YYYY-MM-DD)
+      const dateStr = matchDate.toISOString().split('T')[0];
+
+      // Format time for Open-Meteo API (HH:MM)
+      const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+
+      // Call Open-Meteo API (free, no API key required)
+      const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,wind_direction_10m&timezone=auto&forecast_days=1`;
+
+      const response = await fetch(weatherUrl);
+
+      if (!response.ok) {
+        throw new Error(`Weather API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // Get weather code description
+      const getWeatherDescription = (code) => {
+        const weatherCodes = {
+          0: 'Clear sky',
+          1: 'Mainly clear',
+          2: 'Partly cloudy',
+          3: 'Overcast',
+          45: 'Foggy',
+          48: 'Depositing rime fog',
+          51: 'Light drizzle',
+          53: 'Moderate drizzle',
+          55: 'Dense drizzle',
+          61: 'Slight rain',
+          63: 'Moderate rain',
+          65: 'Heavy rain',
+          71: 'Slight snow',
+          73: 'Moderate snow',
+          75: 'Heavy snow',
+          80: 'Slight rain showers',
+          81: 'Moderate rain showers',
+          82: 'Violent rain showers',
+          95: 'Thunderstorm',
+          96: 'Thunderstorm with slight hail',
+          99: 'Thunderstorm with heavy hail'
+        };
+        return weatherCodes[code] || 'Unknown';
+      };
+
+      // Get wind direction
+      const getWindDirection = (degrees) => {
+        const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+        const index = Math.round(degrees / 22.5) % 16;
+        return directions[index];
+      };
+
+      // Format weather report
+      const temp = data.current.temperature_2m;
+      const feelsLike = data.current.apparent_temperature;
+      const humidity = data.current.relative_humidity_2m;
+      const windSpeed = data.current.wind_speed_10m;
+      const windDir = getWindDirection(data.current.wind_direction_10m);
+      const weatherDesc = getWeatherDescription(data.current.weather_code);
+      const precipitation = data.current.precipitation || 0;
+
+      const report = `Match Time: ${matchStartEvent.timestamp}\n` +
+        `Location: ${latitude.toFixed(4)}°, ${longitude.toFixed(4)}°\n\n` +
+        `Conditions: ${weatherDesc}\n` +
+        `Temperature: ${temp}°C (Feels like ${feelsLike}°C)\n` +
+        `Humidity: ${humidity}%\n` +
+        `Wind: ${windSpeed} km/h ${windDir}\n` +
+        `Precipitation: ${precipitation} mm`;
+
+      setWeatherReport(report);
+
+    } catch (error) {
+      console.error('Error generating weather report:', error);
+
+      let errorMessage = 'Failed to get weather data';
+      if (error.message === 'Geolocation not supported') {
+        errorMessage = 'Location services not available';
+      } else if (error.code === 1) {
+        errorMessage = 'Location permission denied';
+      } else if (error.code === 2) {
+        errorMessage = 'Location unavailable';
+      } else if (error.code === 3) {
+        errorMessage = 'Location request timeout';
+      } else if (error.message.includes('No match start time')) {
+        errorMessage = 'Match not started yet';
+      }
+
+      setWeatherError(errorMessage);
+    } finally {
+      setIsGeneratingWeather(false);
+    }
   };
 
   // AI Report handler
@@ -1690,11 +1828,14 @@ const MatchTracker = () => {
             matchData={generateMatchDataText()}
             onCopyToClipboard={handleCopyMatchData}
             onGenerateAIReport={handleGenerateAIReport}
+            onGenerateWeatherReport={handleGenerateWeatherReport}
             showCopied={showCopied}
             aiEnabled={aiEnabled}
             isFullTime={events.some(e => e.type === 'match_end')}
             isGeneratingAI={isGeneratingAI}
             aiError={aiError}
+            isGeneratingWeather={isGeneratingWeather}
+            weatherError={weatherError}
           />
         )}
 
