@@ -629,6 +629,17 @@ const MatchTracker = () => {
         .filter(e => e.type === 'substitution' && e.playerNumber === playerNumber)
         .sort((a, b) => timeToSeconds(a.timerValue) - timeToSeconds(b.timerValue));
 
+      // If no substitution events, check isSub property
+      if (subEvents.length === 0) {
+        if (player.isSub) {
+          // Substitute who never came on - didn't play
+          return 0;
+        } else {
+          // Starting player with no sub events - played full match
+          return Math.round(matchEndSeconds / 60);
+        }
+      }
+
       let totalSeconds = 0;
       let currentlyOn = didPlayerStart(playerNumber); // Check if player started
       let onTime = 0;
@@ -667,9 +678,19 @@ const MatchTracker = () => {
         .sort((a, b) => timeToSeconds(a.timerValue) - timeToSeconds(b.timerValue));
 
       if (playerSubEvents.length === 0) {
-        // No substitution events - check if they have playing time
-        const minutes = calculatePlayerMinutes(playerNumber);
-        return minutes > 0 ? 'starting' : 'unused';
+        // No substitution events - check the isSub property first
+        const player = players.find(p => p.number === playerNumber);
+        if (player) {
+          // Use the isSub property to determine initial status
+          if (player.isSub) {
+            return 'substitute';
+          } else {
+            // Player started - they should be in starting lineup
+            return 'starting';
+          }
+        }
+        // Fallback if player not found - shouldn't happen
+        return 'unused';
       }
 
       // Check first substitution event
@@ -728,6 +749,7 @@ const MatchTracker = () => {
         const numberPrefix = showNumbers && player.number ? `#${player.number} ` : '';
         const goalStats = formatPlayerGoalStats(player.number);
 
+        // Show minutes if player actually played
         if (minutes > 0) {
           exportText += `${numberPrefix}${playerName} (played ${minutes}')${goalStats}\n`;
         } else {
@@ -746,6 +768,7 @@ const MatchTracker = () => {
         const numberPrefix = showNumbers && player.number ? `#${player.number} ` : '';
         const goalStats = formatPlayerGoalStats(player.number);
 
+        // Show minutes if player actually played
         if (minutes > 0) {
           exportText += `${numberPrefix}${playerName} (played ${minutes}')${goalStats}\n`;
         } else {
@@ -1125,54 +1148,57 @@ const MatchTracker = () => {
     // Update player statuses
     setPlayers(updatedPlayers);
 
-    // Calculate cumulative time for substitution event
-    let cumulativeTime = 0;
-    let periodForSub = currentPeriod;
+    // Use setEvents with callback to ensure we're reading the latest events
+    setEvents((prevEvents) => {
+      // Calculate cumulative time for substitution event
+      let cumulativeTime = 0;
+      let periodForSub = currentPeriod;
 
-    if (currentPeriod && periodStartTimestamp) {
-      // During a period - calculate cumulative time from real-time
-      let previousMinutes = 0;
-      if (currentPeriod === 'Q2') previousMinutes = periodLength;
-      else if (currentPeriod === 'Q3') previousMinutes = periodLength * 2;
-      else if (currentPeriod === 'Q4') previousMinutes = periodLength * 3;
-      else if (currentPeriod === 'H2') previousMinutes = periodLength;
-      else if (currentPeriod === 'P1') previousMinutes = 0;
+      if (currentPeriod && periodStartTimestamp) {
+        // During a period - calculate cumulative time from real-time
+        let previousMinutes = 0;
+        if (currentPeriod === 'Q2') previousMinutes = periodLength;
+        else if (currentPeriod === 'Q3') previousMinutes = periodLength * 2;
+        else if (currentPeriod === 'Q4') previousMinutes = periodLength * 3;
+        else if (currentPeriod === 'H2') previousMinutes = periodLength;
+        else if (currentPeriod === 'P1') previousMinutes = 0;
 
-      const elapsedSeconds = getElapsedSeconds(periodStartTimestamp);
-      cumulativeTime = (previousMinutes * 60) + elapsedSeconds;
-    } else {
-      // Between periods - find the last completed period and use its end time
-      const completedPeriods = events.filter(e => e.type === 'period_end');
-      if (completedPeriods.length > 0) {
-        const lastPeriodEnd = completedPeriods[completedPeriods.length - 1];
-        periodForSub = lastPeriodEnd.period;
+        const elapsedSeconds = getElapsedSeconds(periodStartTimestamp);
+        cumulativeTime = (previousMinutes * 60) + elapsedSeconds;
+      } else {
+        // Between periods - find the last completed period and use its end time
+        const completedPeriods = prevEvents.filter(e => e.type === 'period_end');
+        if (completedPeriods.length > 0) {
+          const lastPeriodEnd = completedPeriods[completedPeriods.length - 1];
+          periodForSub = lastPeriodEnd.period;
 
-        // Parse the timerValue from the period end event (HH:MM:SS format)
-        const timerParts = lastPeriodEnd.timerValue.split(':');
-        const hours = parseInt(timerParts[0]) || 0;
-        const minutes = parseInt(timerParts[1]) || 0;
-        const seconds = parseInt(timerParts[2]) || 0;
-        cumulativeTime = (hours * 3600) + (minutes * 60) + seconds;
+          // Parse the timerValue from the period end event (HH:MM:SS format)
+          const timerParts = lastPeriodEnd.timerValue.split(':');
+          const hours = parseInt(timerParts[0]) || 0;
+          const minutes = parseInt(timerParts[1]) || 0;
+          const seconds = parseInt(timerParts[2]) || 0;
+          cumulativeTime = (hours * 3600) + (minutes * 60) + seconds;
+        }
       }
-    }
 
-    // Create substitution events
-    changes.forEach((change) => {
-      const substitutionEvent = {
-        id: Date.now() + Math.random(), // Ensure unique IDs
-        type: 'substitution',
-        period: periodForSub,
-        timestamp: getCurrentTimestamp(),
-        timerValue: formatTime(cumulativeTime),
-        description: change.from === 'starting'
-          ? `SUB OFF: ${change.player.name || `Player ${change.player.number}`}`
-          : `SUB ON: ${change.player.name || `Player ${change.player.number}`}`,
-        playerNumber: change.player.number,
-        playerName: change.player.name,
-        subType: change.from === 'starting' ? 'off' : 'on'
-      };
+      // Create substitution events
+      const newSubEvents = changes.map((change) => {
+        return {
+          id: Date.now() + Math.random(), // Ensure unique IDs
+          type: 'substitution',
+          period: periodForSub,
+          timestamp: getCurrentTimestamp(),
+          timerValue: formatTime(cumulativeTime),
+          description: change.from === 'starting'
+            ? `SUB OFF: ${change.player.name || `Player ${change.player.number}`}`
+            : `SUB ON: ${change.player.name || `Player ${change.player.number}`}`,
+          playerNumber: change.player.number,
+          playerName: change.player.name,
+          subType: change.from === 'starting' ? 'off' : 'on'
+        };
+      });
 
-      setEvents((prevEvents) => [...prevEvents, substitutionEvent]);
+      return [...prevEvents, ...newSubEvents];
     });
 
     setShowSubstitutionModal(false);
@@ -1235,12 +1261,13 @@ const MatchTracker = () => {
   };
 
   // Helper function to record goal with random time within a period
-  const recordGoalWithRandomTime = (team, period, scorerInfo = null) => {
-    const periodStartTime = Date.now();
-
+  const recordGoalWithRandomTime = (team, period, scorerInfo = null, minTimeInPeriod = 0) => {
     // Calculate random time within the period (in seconds)
     const periodLengthInSeconds = periodLength * 60;
-    const randomSeconds = Math.floor(Math.random() * periodLengthInSeconds);
+
+    // Generate random time after the minimum time
+    const remainingTime = periodLengthInSeconds - minTimeInPeriod;
+    const randomSeconds = minTimeInPeriod + Math.floor(Math.random() * remainingTime);
 
     // Calculate cumulative time based on period
     let previousMinutes = 0;
@@ -1266,6 +1293,9 @@ const MatchTracker = () => {
     };
 
     setEvents((prevEvents) => [...prevEvents, goalEvent]);
+
+    // Return the time within the period (for tracking)
+    return randomSeconds;
   };
 
   // Simulate Match handler (Debug Mode Only)
@@ -1290,8 +1320,20 @@ const MatchTracker = () => {
 
     setPlayers(simulatedPlayers);
 
-    // Increase delay to allow React state to fully update
+    // Force save to localStorage and verify it was written correctly
+    localStorage.setItem('footballPlayers', JSON.stringify(simulatedPlayers));
+
+    // Wait a short time and verify the data is correct
     await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Verify the players were saved correctly by checking localStorage
+    const savedPlayersCheck = localStorage.getItem('footballPlayers');
+    if (savedPlayersCheck) {
+      const parsedPlayers = JSON.parse(savedPlayersCheck);
+      const startingCount = parsedPlayers.filter(p => !p.isSub).length;
+      const subCount = parsedPlayers.filter(p => p.isSub).length;
+      console.log(`Simulation: Saved ${startingCount} starting players and ${subCount} subs`);
+    }
 
     // 3. Proceed to main tracking screen
     setPlayersConfigured(true);
@@ -1311,7 +1353,7 @@ const MatchTracker = () => {
     // 5. Score a goal for home team (random starting player) with randomized time
     const homeStartingPlayers = simulatedPlayers.filter(p => !p.isSub);
     const homeScorer = homeStartingPlayers[Math.floor(Math.random() * homeStartingPlayers.length)];
-    recordGoalWithRandomTime(homeTeam, firstPeriod, {
+    const q1Time1 = recordGoalWithRandomTime(homeTeam, firstPeriod, {
       playerNumber: homeScorer.number,
       playerName: homeScorer.name,
       isPenalty: false
@@ -1319,8 +1361,8 @@ const MatchTracker = () => {
 
     await new Promise(resolve => setTimeout(resolve, 200));
 
-    // 6. Score a goal for away team with randomized time
-    recordGoalWithRandomTime(awayTeam, firstPeriod);
+    // 6. Score a goal for away team with randomized time (after first goal)
+    recordGoalWithRandomTime(awayTeam, firstPeriod, null, q1Time1 + 1);
 
     await new Promise(resolve => setTimeout(resolve, 200));
 
@@ -1335,40 +1377,41 @@ const MatchTracker = () => {
       await new Promise(resolve => setTimeout(resolve, 200));
       handleEndPeriod(periods[1]); // End Q2
       await new Promise(resolve => setTimeout(resolve, 200));
-
-      // 9. Make 2 substitutions (swap 2 random starting players with the 2 subs)
-      const startingPlayers = simulatedPlayers.filter(p => !p.isSub);
-      const subPlayers = simulatedPlayers.filter(p => p.isSub);
-
-      // Pick 2 random starting players to sub off
-      const playersToSubOff = [];
-      const indices = new Set();
-      while (indices.size < 2) {
-        indices.add(Math.floor(Math.random() * startingPlayers.length));
-      }
-      indices.forEach(idx => playersToSubOff.push(startingPlayers[idx]));
-
-      // Create updated players list with swapped isSub status
-      const updatedPlayers = simulatedPlayers.map(p => {
-        if (playersToSubOff.find(sub => sub.number === p.number)) {
-          return { ...p, isSub: true };
-        }
-        if (subPlayers.find(sub => sub.number === p.number)) {
-          return { ...p, isSub: false };
-        }
-        return p;
-      });
-
-      // Create substitution events manually
-      const changes = [
-        ...playersToSubOff.map(p => ({ from: 'starting', to: 'substitute', player: p })),
-        ...subPlayers.map(p => ({ from: 'substitute', to: 'starting', player: p }))
-      ];
-
-      handleCompleteSubstitutions(updatedPlayers, changes);
-
-      await new Promise(resolve => setTimeout(resolve, 200));
     }
+
+    // 9. Make 2 substitutions (swap 2 random starting players with the 2 subs)
+    // This happens after first period for halves, or after Q2 for quarters
+    const startingPlayers = simulatedPlayers.filter(p => !p.isSub);
+    const subPlayers = simulatedPlayers.filter(p => p.isSub);
+
+    // Pick 2 random starting players to sub off
+    const playersToSubOff = [];
+    const indices = new Set();
+    while (indices.size < 2) {
+      indices.add(Math.floor(Math.random() * startingPlayers.length));
+    }
+    indices.forEach(idx => playersToSubOff.push(startingPlayers[idx]));
+
+    // Create updated players list with swapped isSub status
+    const updatedPlayers = simulatedPlayers.map(p => {
+      if (playersToSubOff.find(sub => sub.number === p.number)) {
+        return { ...p, isSub: true };
+      }
+      if (subPlayers.find(sub => sub.number === p.number)) {
+        return { ...p, isSub: false };
+      }
+      return p;
+    });
+
+    // Create substitution events manually
+    const changes = [
+      ...playersToSubOff.map(p => ({ from: 'starting', to: 'substitute', player: p })),
+      ...subPlayers.map(p => ({ from: 'substitute', to: 'starting', player: p }))
+    ];
+
+    handleCompleteSubstitutions(updatedPlayers, changes);
+
+    await new Promise(resolve => setTimeout(resolve, 200));
 
     // 10. Start Q3/H2
     const thirdPeriodIndex = periods.length === 4 ? 2 : 1;
@@ -1379,7 +1422,7 @@ const MatchTracker = () => {
     // 11. Score penalty for home team (random starting player) with randomized time
     const currentStarting = simulatedPlayers.filter(p => !p.isSub);
     const homePenaltyScorer = currentStarting[Math.floor(Math.random() * currentStarting.length)];
-    recordGoalWithRandomTime(homeTeam, periods[thirdPeriodIndex], {
+    const q3Time1 = recordGoalWithRandomTime(homeTeam, periods[thirdPeriodIndex], {
       playerNumber: homePenaltyScorer.number,
       playerName: homePenaltyScorer.name,
       isPenalty: true
@@ -1387,8 +1430,8 @@ const MatchTracker = () => {
 
     await new Promise(resolve => setTimeout(resolve, 200));
 
-    // 12. Score penalty for away team with randomized time
-    recordGoalWithRandomTime(awayTeam, periods[thirdPeriodIndex], { isPenalty: true });
+    // 12. Score penalty for away team with randomized time (after first goal)
+    recordGoalWithRandomTime(awayTeam, periods[thirdPeriodIndex], { isPenalty: true }, q3Time1 + 1);
 
     await new Promise(resolve => setTimeout(resolve, 200));
 
