@@ -838,11 +838,8 @@ const MatchTracker = () => {
     setWeatherError(null);
   };
 
-  // Weather Report handler
-  const handleGenerateWeatherReport = async () => {
-    setIsGeneratingWeather(true);
-    setWeatherError(null);
-
+  // Internal weather report generator (returns report string or null)
+  const generateWeatherReportInternal = async () => {
     try {
       // Get the match start time (first period start event)
       const matchStartEvent = events.find(e => e.type === 'period_start');
@@ -871,8 +868,7 @@ const MatchTracker = () => {
           `Weather data unavailable - location services not enabled.`;
 
         setWeatherReport(report);
-        setIsGeneratingWeather(false);
-        return;
+        return report;
       }
 
       const { latitude, longitude } = position.coords;
@@ -952,6 +948,7 @@ const MatchTracker = () => {
         `Precipitation: ${precipitation} mm`;
 
       setWeatherReport(report);
+      return report;
 
     } catch (error) {
       console.error('Error generating weather report:', error);
@@ -969,53 +966,80 @@ const MatchTracker = () => {
         errorMessage = 'Match not started yet';
       }
 
-      setWeatherError(errorMessage);
-    } finally {
-      setIsGeneratingWeather(false);
+      // Create placeholder report for errors
+      const matchStartEvent = events.find(e => e.type === 'period_start');
+      const report = `Match Time: ${matchStartEvent?.timestamp || 'Unknown'}\n` +
+        `Location: Not available\n\n` +
+        `Weather data unavailable - ${errorMessage}`;
+
+      setWeatherReport(report);
+      return report;
     }
+  };
+
+  // Weather Report handler (for standalone button if needed)
+  const handleGenerateWeatherReport = async () => {
+    setIsGeneratingWeather(true);
+    setWeatherError(null);
+
+    await generateWeatherReportInternal();
+
+    setIsGeneratingWeather(false);
   };
 
   // AI Report handler
   const handleGenerateAIReport = async () => {
-    // Generate simple event-based match data for AI
-    const homeGoals = events.filter(e => e.type === 'goal' && e.team === homeTeam);
-    const awayGoals = events.filter(e => e.type === 'goal' && e.team === awayTeam);
-
-    let exportText = `${homeTeam} ${homeGoals.length}–${awayGoals.length} ${awayTeam}\n\n`;
-
-    // Add all match events in chronological order (simple format)
-    events.forEach(event => {
-      if (event.type === 'period_start' || event.type === 'period_end') {
-        exportText += `${event.description} - ${event.timestamp} [${event.timerValue}]\n`;
-      } else if (event.type === 'goal') {
-        let goalLine = `${event.description}`;
-        if (event.playerNumber) {
-          let playerName = event.playerName;
-          if (!playerName) {
-            const player = players.find(p => p.number === event.playerNumber);
-            playerName = player ? (player.name || `Player ${player.number}`) : null;
-          }
-          if (playerName) {
-            goalLine += ` (${showNumbers && event.playerNumber ? `#${event.playerNumber} ` : ''}${playerName})`;
-          }
-        }
-        if (event.isPenalty) {
-          goalLine += ` (Penalty)`;
-        }
-        goalLine += ` - ${event.timestamp} [${event.timerValue}]`;
-        exportText += goalLine + '\n';
-      } else if (event.type === 'substitution') {
-        exportText += `${event.description} - ${event.timestamp} [${event.timerValue}]\n`;
-      } else if (event.type === 'match_end') {
-        exportText += `${event.description} - ${event.timestamp} [${event.timerValue}]\n`;
-      }
-    });
-
-    // Call AI API
     setIsGeneratingAI(true);
     setAIError(null);
 
     try {
+      // Step 1: Generate weather report first
+      await generateWeatherReportInternal();
+
+      // Step 2: Generate match data with weather report included
+      const homeGoals = events.filter(e => e.type === 'goal' && e.team === homeTeam);
+      const awayGoals = events.filter(e => e.type === 'goal' && e.team === awayTeam);
+
+      let exportText = `${homeTeam} ${homeGoals.length}–${awayGoals.length} ${awayTeam}\n\n`;
+
+      // Add all match events in chronological order (simple format)
+      events.forEach(event => {
+        if (event.type === 'period_start' || event.type === 'period_end') {
+          exportText += `${event.description} - ${event.timestamp} [${event.timerValue}]\n`;
+        } else if (event.type === 'goal') {
+          let goalLine = `${event.description}`;
+          if (event.playerNumber) {
+            let playerName = event.playerName;
+            if (!playerName) {
+              const player = players.find(p => p.number === event.playerNumber);
+              playerName = player ? (player.name || `Player ${player.number}`) : null;
+            }
+            if (playerName) {
+              goalLine += ` (${showNumbers && event.playerNumber ? `#${event.playerNumber} ` : ''}${playerName})`;
+            }
+          }
+          if (event.isPenalty) {
+            goalLine += ` (Penalty)`;
+          }
+          goalLine += ` - ${event.timestamp} [${event.timerValue}]`;
+          exportText += goalLine + '\n';
+        } else if (event.type === 'substitution') {
+          exportText += `${event.description} - ${event.timestamp} [${event.timerValue}]\n`;
+        } else if (event.type === 'match_end') {
+          exportText += `${event.description} - ${event.timestamp} [${event.timerValue}]\n`;
+        }
+      });
+
+      // Append Weather Report if available (will be available from step 1)
+      if (weatherReport) {
+        exportText += '\n';
+        exportText += '='.repeat(50) + '\n';
+        exportText += 'WEATHER REPORT\n';
+        exportText += '='.repeat(50) + '\n\n';
+        exportText += weatherReport + '\n';
+      }
+
+      // Step 3: Call AI API with match data + weather
       const response = await fetch('/api/generate-report', {
         method: 'POST',
         headers: {
@@ -1840,14 +1864,11 @@ const MatchTracker = () => {
             matchData={generateMatchDataText()}
             onCopyToClipboard={handleCopyMatchData}
             onGenerateAIReport={handleGenerateAIReport}
-            onGenerateWeatherReport={handleGenerateWeatherReport}
             showCopied={showCopied}
             aiEnabled={aiEnabled}
             isFullTime={events.some(e => e.type === 'match_end')}
             isGeneratingAI={isGeneratingAI}
             aiError={aiError}
-            isGeneratingWeather={isGeneratingWeather}
-            weatherError={weatherError}
           />
         )}
 
