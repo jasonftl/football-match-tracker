@@ -861,8 +861,25 @@ const MatchTracker = () => {
         throw new Error(`No report in response. Full response: ${responseText}`);
       }
 
-      // Copy report to clipboard
-      await navigator.clipboard.writeText(report);
+      // Copy report to clipboard with iOS fallback
+      try {
+        await navigator.clipboard.writeText(report);
+      } catch (clipboardError) {
+        // Fallback for iOS - use textarea method
+        const textArea = document.createElement('textarea');
+        textArea.value = report;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+          document.execCommand('copy');
+        } finally {
+          document.body.removeChild(textArea);
+        }
+      }
 
       setShowAICopied(true);
       setTimeout(() => {
