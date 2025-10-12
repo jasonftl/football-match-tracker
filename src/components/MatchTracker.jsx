@@ -1204,6 +1204,12 @@ const MatchTracker = () => {
     setEvents([]);
     setPeriodStarted(false);
 
+    // Clear AI and weather reports
+    setAiReport(null);
+    setWeatherReport(null);
+    setAIError(null);
+    setWeatherError(null);
+
     localStorage.setItem('footballMatchData', JSON.stringify({
       ...savedSettings,
       setupComplete: false,
