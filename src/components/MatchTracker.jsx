@@ -844,26 +844,38 @@ const MatchTracker = () => {
     setWeatherError(null);
 
     try {
-      // Get user's location using browser Geolocation API
-      const position = await new Promise((resolve, reject) => {
-        if (!navigator.geolocation) {
-          reject(new Error('Geolocation not supported'));
-          return;
-        }
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: false,
-          timeout: 10000,
-          maximumAge: 300000 // Cache for 5 minutes
-        });
-      });
-
-      const { latitude, longitude } = position.coords;
-
       // Get the match start time (first period start event)
       const matchStartEvent = events.find(e => e.type === 'period_start');
       if (!matchStartEvent) {
         throw new Error('No match start time found');
       }
+
+      // Try to get user's location using browser Geolocation API
+      let position;
+      try {
+        position = await new Promise((resolve, reject) => {
+          if (!navigator.geolocation) {
+            reject(new Error('Geolocation not supported'));
+            return;
+          }
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: false,
+            timeout: 10000,
+            maximumAge: 300000 // Cache for 5 minutes
+          });
+        });
+      } catch (geoError) {
+        // GPS not available or permission denied - create placeholder report
+        const report = `Match Time: ${matchStartEvent.timestamp}\n` +
+          `Location: Not available (GPS not enabled for web browser)\n\n` +
+          `Weather data unavailable - location services not enabled.`;
+
+        setWeatherReport(report);
+        setIsGeneratingWeather(false);
+        return;
+      }
+
+      const { latitude, longitude } = position.coords;
 
       // Parse the timestamp (HH:MM:SS format)
       const [hours, minutes] = matchStartEvent.timestamp.split(':').map(Number);
@@ -1930,3 +1942,4 @@ const MatchTracker = () => {
 };
 
 export default MatchTracker;
+
