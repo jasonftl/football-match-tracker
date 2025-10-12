@@ -861,23 +861,32 @@ const MatchTracker = () => {
         throw new Error(`No report in response. Full response: ${responseText}`);
       }
 
-      // Copy report to clipboard with iOS fallback
+      // Copy report to clipboard
+      // Use textarea method for better iOS compatibility
+      const textArea = document.createElement('textarea');
+      textArea.value = report;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+
+      let copySuccessful = false;
       try {
-        await navigator.clipboard.writeText(report);
-      } catch (clipboardError) {
-        // Fallback for iOS - use textarea method
-        const textArea = document.createElement('textarea');
-        textArea.value = report;
-        textArea.style.position = 'fixed';
-        textArea.style.left = '-999999px';
-        textArea.style.top = '-999999px';
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
+        copySuccessful = document.execCommand('copy');
+      } catch (err) {
+        console.error('Copy command failed:', err);
+      } finally {
+        document.body.removeChild(textArea);
+      }
+
+      // If textarea method failed, try modern clipboard API as fallback
+      if (!copySuccessful) {
         try {
-          document.execCommand('copy');
-        } finally {
-          document.body.removeChild(textArea);
+          await navigator.clipboard.writeText(report);
+        } catch (clipboardError) {
+          throw new Error('Failed to copy report to clipboard');
         }
       }
 
