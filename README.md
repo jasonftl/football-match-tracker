@@ -19,7 +19,8 @@ A Progressive Web App (PWA) for tracking football matches from U7 to Adult level
 - **Match Events**: View complete chronological list of all match events (goals, substitutions, periods)
 - **Match Data View**: Dedicated screen for viewing and exporting match data
 - **Export**: Copy detailed match data to clipboard for sharing
-- **AI Match Reports**: Generate narrative match reports using AI (requires internet, enable in About)
+- **Weather Reports**: Automatically fetches weather conditions at match time using GPS and Open-Meteo API
+- **AI Match Reports**: Generate narrative match reports using AI with weather data (requires internet, enable in About)
 - **Debug Mode**: Simulate complete matches and advance timer for testing (enable in About)
 - **Offline Support**: Core features work completely offline once installed
 - **Data Persistence**: Match settings, player squad lists, and substitute status saved automatically
@@ -234,33 +235,47 @@ Q1 End - 14:40:00 [10:00]
 Match End - 15:10:00 [40:00]
 ```
 
-#### Generate AI Match Report
+#### Generate AI Match Report (with Weather)
 
 **Note:** This optional feature requires internet connection and must be enabled in the About modal (Info button).
 
 1. Complete the match (reach full time)
 2. Enable "AI Features" toggle in the About modal (Info button)
 3. Click "View/Copy Match Data" button (blue)
-4. Click "Generate AI Report" button (purple, in Match Data View)
-5. Wait for AI to generate report (5-15 seconds)
-6. Modal appears with the generated report
-7. Tap "Copy to Clipboard" button to copy
-8. Paste into WhatsApp, notes, or any other app
-9. Click "Back" button to return to Match Tracker
+4. Click "AI Report" button (purple, in Match Data View)
+5. **Allow location access** when prompted (for weather data)
+6. Wait for weather + AI generation (5-20 seconds)
+7. Modal appears with the generated report (includes weather conditions)
+8. Tap "Copy to Clipboard" button to copy
+9. Paste into WhatsApp, notes, or any other app
+10. Click "Back" button to return to Match Tracker
 
 **How it works:**
-- Sends your match data to AI service for processing
+- **Step 1:** Gets your location via GPS (browser permission required)
+- **Step 2:** Fetches weather data from Open-Meteo API (free service)
+  - Temperature, humidity, wind speed/direction
+  - Weather conditions at match time
+  - GPS coordinates (rounded to ~10m accuracy)
+- **Step 3:** Combines match data + weather report
+- **Step 4:** Sends to AI service for narrative report generation
 - Generates a professional-style grassroots football match report
 - Written in British English with warm, fair tone
-- Highlights teamwork, effort, and key moments
-- Takes 5-15 seconds to generate
+- Highlights teamwork, effort, key moments, and match conditions
+- Takes 5-20 seconds to generate
 - **iOS-friendly:** Report shown in modal, tap to copy (preserves clipboard access)
 
+**Weather Fallback:**
+- If GPS unavailable: Report generated without weather data
+- If permission denied: Shows "Location permission denied" in weather section
+- If offline: Weather fetch fails gracefully with placeholder message
+
 **Privacy Note:**
-- Match data (including first names) is sent to OpenRouter's AI service
+- Location permission requested by browser (one-time)
+- GPS coordinates sent to Open-Meteo for weather lookup (no personal data collected)
+- Match data (including first names and GPS location) sent to OpenRouter's AI service
 - Data may be processed by the AI provider for improving their models
 - Use first names only (not full names) to minimize identifiable data
-- Traditional export is always available without using AI
+- Traditional export is always available without using AI or GPS
 
 #### End/Reset Match
 
@@ -401,10 +416,20 @@ This app is hosted on Vercel, which may collect anonymous usage analytics (page 
 
 **Privacy Policy:** https://vercel.com/legal/privacy-policy
 
+#### Weather Report Generation (Optional Feature)
+
+When you choose to use the "AI Report" feature (includes weather):
+- Browser requests location permission (GPS)
+- GPS coordinates sent to Open-Meteo API for weather lookup
+- Open-Meteo is a free weather service, no personal data collected
+- See Open-Meteo's terms: https://open-meteo.com/en/terms
+
 #### AI Match Report Generation (Optional Feature)
 
-When you choose to use the "AI Report to Clipboard" feature:
-- Match data (team names, first names, match events) is sent to OpenRouter's AI service
+When you choose to use the "AI Report" feature:
+- Weather report (including GPS coordinates) automatically generated first
+- Match data + weather report sent to OpenRouter's AI service
+- Includes: Team names, player first names, match events, weather, GPS location
 - Data may be processed by the AI provider for improving their models
 - See OpenRouter's privacy policy: https://openrouter.ai/privacy
 
@@ -429,7 +454,8 @@ When you choose to use the "AI Report to Clipboard" feature:
 
 - App hosted on Vercel - may collect anonymous usage analytics
 - No personally identifiable information collected via analytics
-- Optional AI Match Report feature sends match data to OpenRouter's AI service
+- Optional Weather Report feature uses GPS and sends coordinates to Open-Meteo API
+- Optional AI Match Report feature sends match data + weather + GPS to OpenRouter's AI service
 - Data sent to AI may be processed for improving their models
 
 ### 3. Data Protection Tips
@@ -442,7 +468,7 @@ When you choose to use the "AI Report to Clipboard" feature:
 
 - App provided "as is" without warranty of any kind
 - We are not responsible for data loss, errors, or issues
-- We are not liable for how third-party services handle data
+- We are not liable for how third-party services (Open-Meteo, OpenRouter) handle data
 - You use this app entirely at your own risk
 
 ### 5. Your Confirmation
@@ -450,7 +476,8 @@ When you choose to use the "AI Report to Clipboard" feature:
 By using this app, you confirm that:
 - You have read and understood these terms
 - You will use first names only to minimize identifiable data
-- You understand the optional AI feature sends data to third-party services
+- You understand the optional weather feature uses GPS and shares coordinates
+- You understand the optional AI feature sends data (including weather/GPS) to third-party services
 - You accept the app "as is" with no warranty
 - You are old enough to enter into this agreement
 
