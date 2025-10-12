@@ -17,7 +17,7 @@ A Progressive Web App (PWA) for tracking football matches from U7 to Adult level
 - **Power Play Support**: Automatic extra player allowance for U7-U10 when trailing
 - **Match Events**: View complete chronological list of all match events (goals, substitutions, periods)
 - **Export**: Copy detailed match data to clipboard for sharing
-- **AI Match Reports**: Generate narrative match reports using AI (requires internet, debug mode)
+- **AI Match Reports**: Generate narrative match reports using AI (requires internet, enable in About)
 - **Offline Support**: Core features work completely offline once installed
 - **Data Persistence**: Match settings, player squad lists, and substitute status saved automatically
 
@@ -233,11 +233,13 @@ Match End - 15:10:00 [40:00]
 **Note:** This optional feature requires internet connection and must be enabled in the About modal (Info button).
 
 1. Complete the match (reach full time)
-2. Enable AI features in the About modal (Info button)
+2. Enable "AI Features" toggle in the About modal (Info button)
 3. Purple "AI Report to Clipboard" button appears
 4. Click button to generate narrative match report
-5. AI-generated report automatically copied to clipboard
-6. Paste into WhatsApp, notes, or any other app
+5. Wait for AI to generate report (5-15 seconds)
+6. Modal appears with the generated report
+7. Tap "Copy to Clipboard" button to copy
+8. Paste into WhatsApp, notes, or any other app
 
 **How it works:**
 - Sends your match data to AI service for processing
@@ -245,6 +247,7 @@ Match End - 15:10:00 [40:00]
 - Written in British English with warm, fair tone
 - Highlights teamwork, effort, and key moments
 - Takes 5-15 seconds to generate
+- **iOS-friendly:** Report shown in modal, tap to copy (preserves clipboard access)
 
 **Privacy Note:**
 - Match data (including first names) is sent to OpenRouter's AI service
