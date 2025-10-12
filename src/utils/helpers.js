@@ -1,14 +1,15 @@
 // Helper functions for Football Match Tracker
 
 /**
- * Format seconds as MM:SS
+ * Format seconds as HH:MM:SS
  * @param {number} seconds - Total seconds
  * @returns {string} Formatted time string
  */
 export const formatTime = (seconds) => {
-  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
   const secs = seconds % 60;
-  return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 };
 
 /**
@@ -48,16 +49,17 @@ export const getCumulativeTime = (currentPeriod, elapsedTime, periodLength) => {
 
 /**
  * Calculate match minute from timer value and period
- * @param {string} timerValue - Timer value in MM:SS format (cumulative time)
+ * @param {string} timerValue - Timer value in HH:MM:SS format (cumulative time)
  * @param {string} period - Period code
  * @param {number} periodLength - Length of each period in minutes
  * @returns {number} Match minute (1-indexed)
  */
 export const calculateMatchMinute = (timerValue, period, periodLength) => {
   const timeParts = timerValue.split(':');
-  const minutes = parseInt(timeParts[0]);
-  const seconds = parseInt(timeParts[1]);
-  const elapsedSeconds = (minutes * 60) + seconds;
+  const hours = parseInt(timeParts[0]) || 0;
+  const minutes = parseInt(timeParts[1]) || 0;
+  const seconds = parseInt(timeParts[2]) || 0;
+  const elapsedSeconds = (hours * 3600) + (minutes * 60) + seconds;
 
   // Calculate match minute directly from cumulative time (timerValue is already cumulative)
   const matchMinute = elapsedSeconds > 0 ? Math.floor(elapsedSeconds / 60) + 1 : 1;

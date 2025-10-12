@@ -3,7 +3,7 @@
 // Uses modular components for better maintainability
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Download, Edit2, Trash2, Save, X, Play, Users, Info, Sparkles } from 'lucide-react';
+import { Plus, FileText, Edit2, Trash2, Save, X, Play, Users, Info, ArrowLeft } from 'lucide-react';
 import MatchSetup from './MatchSetup';
 import PlayerSetup from './PlayerSetup';
 import Timer from './Timer';
@@ -12,6 +12,7 @@ import SubstitutionModal from './SubstitutionModal';
 import GoalScorerModal from './GoalScorerModal';
 import AboutModal from './AboutModal';
 import UserAgreementModal from './UserAgreementModal';
+import MatchDataView from './MatchDataView';
 import { AGE_GROUPS } from '../constants/ageGroups';
 import {
   formatTime,
@@ -36,6 +37,7 @@ const MatchTracker = () => {
   const [showGoalScorerModal, setShowGoalScorerModal] = useState(false);
   const [pendingGoalTeam, setPendingGoalTeam] = useState(null);
   const [pendingGoalPeriod, setPendingGoalPeriod] = useState(null);
+  const [showMatchDataView, setShowMatchDataView] = useState(false);
 
   // State for user agreement (first-run)
   const [showUserAgreement, setShowUserAgreement] = useState(() => {
@@ -251,27 +253,35 @@ const MatchTracker = () => {
     setEvents((prevEvents) => [...prevEvents, periodEvent]);
   };
 
-  const handleEndPeriod = () => {
+  const handleEndPeriod = (periodToEnd = null) => {
+    // Use the passed period or fall back to currentPeriod from state
+    const periodBeingEnded = periodToEnd || currentPeriod;
+
+    if (!periodBeingEnded) {
+      console.warn('handleEndPeriod called with no period');
+      return;
+    }
+
     let previousMinutes = 0;
-    if (currentPeriod === 'Q2') previousMinutes = periodLength;
-    else if (currentPeriod === 'Q3') previousMinutes = periodLength * 2;
-    else if (currentPeriod === 'Q4') previousMinutes = periodLength * 3;
-    else if (currentPeriod === 'H2') previousMinutes = periodLength;
+    if (periodBeingEnded === 'Q2') previousMinutes = periodLength;
+    else if (periodBeingEnded === 'Q3') previousMinutes = periodLength * 2;
+    else if (periodBeingEnded === 'Q4') previousMinutes = periodLength * 3;
+    else if (periodBeingEnded === 'H2') previousMinutes = periodLength;
 
     const cumulativeEndTime = (previousMinutes * 60) + (periodLength * 60);
 
     const periodEndEvent = {
       id: Date.now() + Math.random(),
       type: 'period_end',
-      period: currentPeriod,
+      period: periodBeingEnded,
       timestamp: getCurrentTimestamp(),
       timerValue: formatTime(cumulativeEndTime),
-      description: `${currentPeriod} End`,
+      description: `${periodBeingEnded} End`,
     };
 
     setEvents((prevEvents) => {
       const alreadyExists = prevEvents.some(
-        e => e.type === 'period_end' && e.period === currentPeriod
+        e => e.type === 'period_end' && e.period === periodBeingEnded
       );
       if (alreadyExists) {
         return prevEvents;
@@ -280,11 +290,13 @@ const MatchTracker = () => {
     });
 
     const periods = getPeriods(useQuarters, customPeriods);
-    const currentIndex = periods.indexOf(currentPeriod);
+    const currentIndex = periods.indexOf(periodBeingEnded);
+    console.log('handleEndPeriod:', { periodBeingEnded, periods, currentIndex, isLastPeriod: currentIndex === periods.length - 1 });
     if (currentIndex < periods.length - 1) {
       setCurrentPeriod(null);
       setPeriodStartTimestamp(null);
     } else {
+      console.log('Creating match end event');
       const matchEndEvent = {
         id: Date.now() + Math.random(),
         type: 'match_end',
@@ -295,8 +307,10 @@ const MatchTracker = () => {
       setEvents((prevEvents) => {
         const matchEndExists = prevEvents.some(e => e.type === 'match_end');
         if (matchEndExists) {
+          console.log('Match end event already exists');
           return prevEvents;
         }
+        console.log('Adding match end event to events');
         return [...prevEvents, matchEndEvent];
       });
       setCurrentPeriod(null);
@@ -407,9 +421,10 @@ const MatchTracker = () => {
         const startTotalSeconds = (startHours * 3600) + (startMinutes * 60) + startSeconds;
 
         const timerParts = editedEventData.timerValue.split(':');
-        const timerMinutes = parseInt(timerParts[0]) || 0;
-        const timerSeconds = parseInt(timerParts[1]) || 0;
-        const elapsedSeconds = (timerMinutes * 60) + timerSeconds;
+        const timerHours = parseInt(timerParts[0]) || 0;
+        const timerMinutes = parseInt(timerParts[1]) || 0;
+        const timerSeconds = parseInt(timerParts[2]) || 0;
+        const elapsedSeconds = (timerHours * 3600) + (timerMinutes * 60) + timerSeconds;
 
         const newTotalSeconds = startTotalSeconds + elapsedSeconds;
         const newHours = Math.floor(newTotalSeconds / 3600) % 24;
@@ -600,8 +615,8 @@ const MatchTracker = () => {
     setShowAICopied(false);
   };
 
-  // Export handler
-  const handleExport = () => {
+  // Generate match data text (shared by export and match data view)
+  const generateMatchDataText = () => {
     const homeGoals = events.filter(e => e.type === 'goal' && e.team === homeTeam);
     const awayGoals = events.filter(e => e.type === 'goal' && e.team === awayTeam);
 
@@ -624,10 +639,13 @@ const MatchTracker = () => {
 
     exportText += '\n';
 
-    // Helper function to convert timerValue (MM:SS) to seconds
+    // Helper function to convert timerValue (HH:MM:SS) to seconds
     const timeToSeconds = (timerValue) => {
       const parts = timerValue.split(':');
-      return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+      const hours = parseInt(parts[0]) || 0;
+      const minutes = parseInt(parts[1]) || 0;
+      const seconds = parseInt(parts[2]) || 0;
+      return (hours * 3600) + (minutes * 60) + seconds;
     };
 
     // Get match end time (in seconds)
@@ -820,14 +838,34 @@ const MatchTracker = () => {
       }
     });
 
-    navigator.clipboard.writeText(exportText).then(() => {
+    return exportText;
+  };
+
+  // Handler for copying match data directly to clipboard
+  const handleCopyMatchData = async () => {
+    const matchData = generateMatchDataText();
+
+    try {
+      await navigator.clipboard.writeText(matchData);
       setShowCopied(true);
       setTimeout(() => {
         setShowCopied(false);
       }, 3000);
-    }).catch(() => {
+    } catch (error) {
       alert('Failed to copy to clipboard. Please try again.');
-    });
+    }
+  };
+
+  // Handler for viewing match data
+  const handleViewMatchData = () => {
+    setShowMatchDataView(true);
+  };
+
+  // Handler for going back from match data view
+  const handleBackFromMatchDataView = () => {
+    setShowMatchDataView(false);
+    setShowCopied(false);
+    setAIError(null);
   };
 
   // AI Report handler
@@ -979,9 +1017,12 @@ const MatchTracker = () => {
         const lastPeriodEnd = completedPeriods[completedPeriods.length - 1];
         periodForSub = lastPeriodEnd.period;
 
-        // Parse the timerValue from the period end event
+        // Parse the timerValue from the period end event (HH:MM:SS format)
         const timerParts = lastPeriodEnd.timerValue.split(':');
-        cumulativeTime = (parseInt(timerParts[0]) * 60) + parseInt(timerParts[1]);
+        const hours = parseInt(timerParts[0]) || 0;
+        const minutes = parseInt(timerParts[1]) || 0;
+        const seconds = parseInt(timerParts[2]) || 0;
+        cumulativeTime = (hours * 3600) + (minutes * 60) + seconds;
       }
     }
 
@@ -1057,6 +1098,148 @@ const MatchTracker = () => {
     setShowUserAgreement(false);
   };
 
+  // Simulate Match handler (Debug Mode Only)
+  const handleSimulateMatch = async () => {
+    const firstNames = ['Alex', 'Sam', 'Jordan', 'Taylor', 'Morgan', 'Casey', 'Riley', 'Jamie', 'Avery', 'Quinn', 'Parker', 'Reese'];
+
+    // 1. Continue to player setup
+    handleSetupComplete();
+
+    // Wait for state updates
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // 2. Reset players with first names and add 2 subs
+    const numPlayers = selectedAgeGroup.defaultPlayerCount;
+    const simulatedPlayers = [];
+
+    for (let i = 1; i <= numPlayers + 2; i++) {
+      const name = firstNames[(i - 1) % firstNames.length];
+      const isSub = i > numPlayers; // Last 2 are subs
+      simulatedPlayers.push({ number: i, name, isSub });
+    }
+
+    setPlayers(simulatedPlayers);
+
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // 3. Proceed to main tracking screen
+    setPlayersConfigured(true);
+    setMatchStarted(true);
+
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    // Get periods based on current settings
+    const periods = getPeriods(useQuarters, customPeriods);
+
+    // 4. Start first period (Q1 or H1)
+    const firstPeriod = periods[0];
+    handleStartPeriod(firstPeriod);
+
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    // 5. Score a goal for home team (random starting player)
+    const homeStartingPlayers = simulatedPlayers.filter(p => !p.isSub);
+    const homeScorer = homeStartingPlayers[Math.floor(Math.random() * homeStartingPlayers.length)];
+    handleRecordGoal(homeTeam, firstPeriod, {
+      playerNumber: homeScorer.number,
+      playerName: homeScorer.name,
+      isPenalty: false
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    // 6. Score a goal for away team
+    handleRecordGoal(awayTeam, firstPeriod);
+
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    // 7. End first period
+    handleEndPeriod(firstPeriod);
+
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    // 8. If quarters, start and end Q2
+    if (periods.length === 4) {
+      handleStartPeriod(periods[1]); // Q2
+      await new Promise(resolve => setTimeout(resolve, 200));
+      handleEndPeriod(periods[1]); // End Q2
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      // 9. Make 2 substitutions (swap 2 random starting players with the 2 subs)
+      const startingPlayers = simulatedPlayers.filter(p => !p.isSub);
+      const subPlayers = simulatedPlayers.filter(p => p.isSub);
+
+      // Pick 2 random starting players to sub off
+      const playersToSubOff = [];
+      const indices = new Set();
+      while (indices.size < 2) {
+        indices.add(Math.floor(Math.random() * startingPlayers.length));
+      }
+      indices.forEach(idx => playersToSubOff.push(startingPlayers[idx]));
+
+      // Create updated players list with swapped isSub status
+      const updatedPlayers = simulatedPlayers.map(p => {
+        if (playersToSubOff.find(sub => sub.number === p.number)) {
+          return { ...p, isSub: true };
+        }
+        if (subPlayers.find(sub => sub.number === p.number)) {
+          return { ...p, isSub: false };
+        }
+        return p;
+      });
+
+      // Create substitution events manually
+      const changes = [
+        ...playersToSubOff.map(p => ({ from: 'starting', to: 'substitute', player: p })),
+        ...subPlayers.map(p => ({ from: 'substitute', to: 'starting', player: p }))
+      ];
+
+      handleCompleteSubstitutions(updatedPlayers, changes);
+
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
+
+    // 10. Start Q3/H2
+    const thirdPeriodIndex = periods.length === 4 ? 2 : 1;
+    handleStartPeriod(periods[thirdPeriodIndex]);
+
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    // 11. Score penalty for home team (random starting player)
+    const currentStarting = simulatedPlayers.filter(p => !p.isSub);
+    const homePenaltyScorer = currentStarting[Math.floor(Math.random() * currentStarting.length)];
+    handleRecordGoal(homeTeam, periods[thirdPeriodIndex], {
+      playerNumber: homePenaltyScorer.number,
+      playerName: homePenaltyScorer.name,
+      isPenalty: true
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    // 12. Score penalty for away team
+    handleRecordGoal(awayTeam, periods[thirdPeriodIndex], { isPenalty: true });
+
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    // 13. End Q3/H2
+    handleEndPeriod(periods[thirdPeriodIndex]);
+
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    // 14. If quarters, start and end Q4
+    if (periods.length === 4) {
+      handleStartPeriod(periods[3]); // Q4
+      await new Promise(resolve => setTimeout(resolve, 200));
+      handleEndPeriod(periods[3]); // End Q4 - This will also end the match
+      await new Promise(resolve => setTimeout(resolve, 500)); // Wait for match end event to be created
+    } else {
+      // For halves, the last period was already ended at step 13
+      await new Promise(resolve => setTimeout(resolve, 500)); // Wait for match end event to be created
+    }
+
+    // Match is now complete, user stays on main tracking screen
+  };
+
   // Helper to get next period
   const getNextPeriod = () => {
     const periods = getPeriods(useQuarters, customPeriods);
@@ -1105,18 +1288,62 @@ const MatchTracker = () => {
   return (
     <div className="min-h-screen bg-gray-900 p-3 sm:p-4">
       <div className="max-w-2xl mx-auto bg-gray-800 rounded-lg shadow-lg p-4 sm:p-6">
-        {/* Header with About button */}
+        {/* Header with Back and About buttons */}
         <div className="flex items-center justify-between mb-4 sm:mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold text-orange-500">
             Football Match Tracker
           </h1>
-          <button
-            onClick={() => setShowAbout(true)}
-            className="text-gray-400 hover:text-orange-500 transition duration-200"
-            title="About"
-          >
-            <Info size={24} />
-          </button>
+          <div className="flex items-center gap-3">
+            {/* Back button - shown on Player Setup, Match Data View, and Match Tracker (before match starts) screens */}
+            {(setupComplete && !playersConfigured) && (
+              <button
+                onClick={handleBackToSetup}
+                className="text-gray-400 hover:text-orange-500 transition duration-200 flex items-center gap-1 px-3 py-2 rounded-lg border border-gray-600 hover:border-orange-500"
+                title="Back"
+              >
+                <ArrowLeft size={20} />
+                <span className="text-sm font-medium">Back</span>
+              </button>
+            )}
+            {(matchStarted && !showMatchDataView && events.length === 0) && (
+              <button
+                onClick={() => {
+                  // Go back to player setup (or match setup if referee mode)
+                  if (isManager) {
+                    setPlayersConfigured(false);
+                    setMatchStarted(false);
+                  } else {
+                    setSetupComplete(false);
+                    setPlayersConfigured(false);
+                    setMatchStarted(false);
+                  }
+                }}
+                className="text-gray-400 hover:text-orange-500 transition duration-200 flex items-center gap-1 px-3 py-2 rounded-lg border border-gray-600 hover:border-orange-500"
+                title="Back"
+              >
+                <ArrowLeft size={20} />
+                <span className="text-sm font-medium">Back</span>
+              </button>
+            )}
+            {showMatchDataView && (
+              <button
+                onClick={handleBackFromMatchDataView}
+                className="text-gray-400 hover:text-orange-500 transition duration-200 flex items-center gap-1 px-3 py-2 rounded-lg border border-gray-600 hover:border-orange-500"
+                title="Back"
+              >
+                <ArrowLeft size={20} />
+                <span className="text-sm font-medium">Back</span>
+              </button>
+            )}
+            {/* About button */}
+            <button
+              onClick={() => setShowAbout(true)}
+              className="text-gray-400 hover:text-orange-500 transition duration-200 p-2 rounded-full border border-gray-600 hover:border-orange-500"
+              title="About"
+            >
+              <Info size={24} />
+            </button>
+          </div>
         </div>
 
         {/* Match Setup Screen */}
@@ -1139,6 +1366,8 @@ const MatchTracker = () => {
             customPeriods={customPeriods}
             setCustomPeriods={setCustomPeriods}
             onSetupComplete={handleSetupComplete}
+            debugMode={debugMode}
+            onSimulateMatch={handleSimulateMatch}
           />
         )}
 
@@ -1152,12 +1381,11 @@ const MatchTracker = () => {
             setShowNumbers={setShowNumbers}
             ageGroup={ageGroup}
             onPlayersComplete={handlePlayersComplete}
-            onBack={handleBackToSetup}
           />
         )}
 
-        {/* Match Tracker Screen */}
-        {matchStarted && (
+        {/* Match Tracker Screen or Match Data View */}
+        {matchStarted && !showMatchDataView && (
           <>
             {/* Match Summary */}
             <div className="bg-gray-700 p-3 sm:p-4 rounded-lg mb-4 sm:mb-6" key={`summary-${refreshKey}`}>
@@ -1345,10 +1573,30 @@ const MatchTracker = () => {
                   className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2"
                 >
                   <Users size={20} />
-                  Substitutes
+                  Make a Sub
                 </button>
               </div>
             )}
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 mb-6">
+              {/* View/Copy Match Data Button */}
+              <button
+                onClick={handleViewMatchData}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-200 flex items-center justify-center gap-2"
+              >
+                <FileText size={20} />
+                View/Copy Match Data
+              </button>
+
+              {/* Reset Button */}
+              <button
+                onClick={handleResetMatch}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg transition duration-200"
+              >
+                End/Reset Match
+              </button>
+            </div>
 
             {/* Match Events */}
             <div className="mb-6">
@@ -1376,9 +1624,9 @@ const MatchTracker = () => {
                             onChange={(e) =>
                               setEditForm({ ...editForm, timerValue: e.target.value })
                             }
-                            placeholder="MM:SS"
-                            pattern="[0-9]{2}:[0-9]{2}"
-                            className="w-24 p-2 bg-gray-600 border border-gray-500 text-gray-100 rounded"
+                            placeholder="HH:MM:SS"
+                            pattern="[0-9]{2}:[0-9]{2}:[0-9]{2}"
+                            className="w-32 p-2 bg-gray-600 border border-gray-500 text-gray-100 rounded"
                           />
                           {event.type === 'goal' && (
                             <>
@@ -1477,54 +1725,21 @@ const MatchTracker = () => {
                 ))}
               </div>
             </div>
-
-            {/* Action Buttons */}
-            <div className="flex flex-col gap-3">
-              {/* AI Report Button */}
-              <div>
-                <button
-                  onClick={handleGenerateAIReport}
-                  disabled={!aiEnabled || !events.some(e => e.type === 'match_end') || isGeneratingAI}
-                  className={`w-full font-bold py-3 px-6 rounded-lg transition duration-200 flex items-center justify-center gap-2 ${
-                    !aiEnabled || !events.some(e => e.type === 'match_end') || isGeneratingAI
-                      ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                      : 'bg-purple-600 hover:bg-purple-700 text-white'
-                  }`}
-                >
-                  <Sparkles size={20} />
-                  {isGeneratingAI
-                    ? 'Generating AI Report...'
-                    : showAICopied
-                    ? 'AI Report Copied!'
-                    : aiError
-                    ? `Error: ${aiError}`
-                    : 'AI Report to Clipboard'}
-                </button>
-                {!aiEnabled && (
-                  <p className="text-xs text-yellow-400 mt-2 text-center">
-                    Enable AI Features in the About (Info) page to use this feature
-                  </p>
-                )}
-              </div>
-
-              {/* Regular Export and Reset Buttons */}
-              <div className="flex gap-3">
-                <button
-                  onClick={handleExport}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-200 flex items-center justify-center gap-2"
-                >
-                  <Download size={20} />
-                  {showCopied ? 'Copied!' : 'Match Data to Clipboard'}
-                </button>
-                <button
-                  onClick={handleResetMatch}
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg transition duration-200"
-                >
-                  Reset Match
-                </button>
-              </div>
-            </div>
           </>
+        )}
+
+        {/* Match Data View Screen */}
+        {matchStarted && showMatchDataView && (
+          <MatchDataView
+            matchData={generateMatchDataText()}
+            onCopyToClipboard={handleCopyMatchData}
+            onGenerateAIReport={handleGenerateAIReport}
+            showCopied={showCopied}
+            aiEnabled={aiEnabled}
+            isFullTime={events.some(e => e.type === 'match_end')}
+            isGeneratingAI={isGeneratingAI}
+            aiError={aiError}
+          />
         )}
 
         {/* Modals */}

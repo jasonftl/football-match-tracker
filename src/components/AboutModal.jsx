@@ -297,7 +297,7 @@ const AboutModal = ({ isOpen, onClose }) => {
         <div className="mt-6 pt-6 border-t border-gray-700">
           <div className="flex items-center justify-between">
             <label className="text-sm font-medium text-gray-300">
-              Debug Mode (Show timer test buttons)
+              Debug Mode
             </label>
             <button
               onClick={handleToggleDebug}

@@ -11,13 +11,16 @@ A Progressive Web App (PWA) for tracking football matches from U7 to Adult level
 - **Substitute Tracking**: Mark players as starting or substitutes with green/red toggles
 - **Real-Time Timer**: Continuous timer based on wall-clock time that runs even when screen locks
 - **Goal Tracking**: Record goals in real-time with timestamps
+- **Goal Scorer Modal**: Instantly assign players and mark penalties when goals are scored (Manager mode)
 - **Goal Details**: Assign players to goals and mark penalties
 - **Missed Goals**: Add goals to previous periods that were missed during play
-- **Substitution Management**: Manage player substitutions during the match
+- **Substitution Management**: Manage player substitutions during the match with visual three-column interface
 - **Power Play Support**: Automatic extra player allowance for U7-U10 when trailing
 - **Match Events**: View complete chronological list of all match events (goals, substitutions, periods)
+- **Match Data View**: Dedicated screen for viewing and exporting match data
 - **Export**: Copy detailed match data to clipboard for sharing
 - **AI Match Reports**: Generate narrative match reports using AI (requires internet, enable in About)
+- **Debug Mode**: Simulate complete matches and advance timer for testing (enable in About)
 - **Offline Support**: Core features work completely offline once installed
 - **Data Persistence**: Match settings, player squad lists, and substitute status saved automatically
 
@@ -123,8 +126,8 @@ A Progressive Web App (PWA) for tracking football matches from U7 to Adult level
 
 **Note:** Substitution tracking is not available in Referee mode.
 
-**During Active Period:**
-- Click purple "Substitutes" button below goal buttons
+**During Match (Even Between Periods):**
+- Click purple "Make a Sub" button
 - Modal shows three columns with one player per row:
   - **Playing** (left): Current starting players
   - **Toggles** (center): Green/red switches
@@ -181,11 +184,14 @@ The top of the screen shows:
 
 ### 4. After the Match
 
-#### Export Match Data
+#### View and Export Match Data
 
-1. Click "Match Data to Clipboard" button
-2. Button shows "Copied!" for 3 seconds
-3. Paste into WhatsApp, notes, or any other app
+1. Click "View/Copy Match Data" button (blue)
+2. Match Data View screen opens showing formatted match data
+3. Click "Copy to Clipboard" to copy match data
+4. Button shows "Copied!" for 3 seconds
+5. Paste into WhatsApp, notes, or any other app
+6. Click "Back" button to return to Match Tracker
 
 **Manager Mode Export Format:**
 ```
@@ -234,12 +240,13 @@ Match End - 15:10:00 [40:00]
 
 1. Complete the match (reach full time)
 2. Enable "AI Features" toggle in the About modal (Info button)
-3. Purple "AI Report to Clipboard" button appears
-4. Click button to generate narrative match report
+3. Click "View/Copy Match Data" button (blue)
+4. Click "Generate AI Report" button (purple, in Match Data View)
 5. Wait for AI to generate report (5-15 seconds)
 6. Modal appears with the generated report
 7. Tap "Copy to Clipboard" button to copy
 8. Paste into WhatsApp, notes, or any other app
+9. Click "Back" button to return to Match Tracker
 
 **How it works:**
 - Sends your match data to AI service for processing
@@ -255,14 +262,41 @@ Match End - 15:10:00 [40:00]
 - Use first names only (not full names) to minimize identifiable data
 - Traditional export is always available without using AI
 
-#### Reset Match
+#### End/Reset Match
 
-1. Click "Reset Match" button (red)
+1. Click "End/Reset Match" button (red)
 2. Confirm in the popup
 3. Match data is cleared
-4. Match configuration (age group, format, team names) is preserved
+4. Match configuration (age group, format, team names, Referee/Manager mode) is preserved
 5. Player squad list is preserved (including substitute status)
 6. Returns to Match Setup screen for the next match
+
+## Debug Mode (For Testing)
+
+**Note:** Debug features are hidden by default. Enable "Debug Mode" in the About modal (Info button) to access them.
+
+### Simulate Match
+
+1. Enable "Debug Mode" in the About modal
+2. On Match Setup screen, yellow "Simulate Match" button appears
+3. Click button to run complete simulated match:
+   - Automatically creates players with first names
+   - Adds 2 substitutes (Manager mode)
+   - Starts match and plays through all periods
+   - Scores goals for both teams (including penalties)
+   - Makes substitutions (quarters format, Manager mode)
+   - Ends match with "FULL TIME" banner
+4. Uses your current match settings (age group, format, team names, mode)
+5. Useful for testing export, AI reports, and UI states
+
+### Timer Debug Buttons
+
+1. Enable "Debug Mode" in the About modal
+2. During active period, purple timer buttons appear:
+   - "+10 sec" - Advances timer by 10 seconds
+   - "+1 min" - Advances timer by 1 minute
+   - "+5 min" - Advances timer by 5 minutes
+3. Useful for testing period transitions without waiting
 
 ## Tips & Best Practices
 

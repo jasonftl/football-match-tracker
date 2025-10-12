@@ -23,7 +23,9 @@ const MatchSetup = ({
   setPeriodLength,
   customPeriods,
   setCustomPeriods,
-  onSetupComplete
+  onSetupComplete,
+  debugMode,
+  onSimulateMatch
 }) => {
 
   // Local state for custom format
@@ -274,6 +276,16 @@ const MatchSetup = ({
         <Play size={20} />
         {isManager ? 'Continue to Player Setup' : 'Start Match Tracker'}
       </button>
+
+      {/* Simulate Match Button (Debug Mode Only) */}
+      {debugMode && (
+        <button
+          onClick={onSimulateMatch}
+          className="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 px-6 rounded-lg transition duration-200"
+        >
+          Simulate Match
+        </button>
+      )}
     </div>
   );
 };

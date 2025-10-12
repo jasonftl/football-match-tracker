@@ -15,7 +15,6 @@ const PlayerSetup = ({
   setShowNumbers,
   ageGroup,
   onPlayersComplete,
-  onBack
 }) => {
 
   // State for reset confirmation modal
@@ -128,6 +127,33 @@ const PlayerSetup = ({
         {teamName} Players
       </h2>
 
+      {/* Action Buttons */}
+      <div className="flex gap-3">
+        <button
+          onClick={handleAddPlayer}
+          className="flex-1 bg-gray-700 hover:bg-gray-600 text-gray-100 font-bold py-2 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2"
+        >
+          <UserPlus size={20} />
+          Add
+        </button>
+
+        <button
+          onClick={handleResetPlayersClick}
+          className="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2"
+        >
+          <RotateCcw size={20} />
+          Reset
+        </button>
+
+        <button
+          onClick={onPlayersComplete}
+          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2"
+        >
+          <Play size={20} />
+          Proceed
+        </button>
+      </div>
+
       {/* Player List Header with Show Numbers Toggle */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 mb-4">
         {/* Left: Sub Toggle Explanation */}
@@ -203,41 +229,6 @@ const PlayerSetup = ({
             </button>
           </div>
         ))}
-      </div>
-
-      {/* Add Player Button */}
-      <button
-        onClick={handleAddPlayer}
-        className="w-full bg-gray-700 hover:bg-gray-600 text-gray-100 font-bold py-2 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2"
-      >
-        <UserPlus size={20} />
-        Add Player
-      </button>
-
-      {/* Reset Players Button */}
-      <button
-        onClick={handleResetPlayersClick}
-        className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2"
-      >
-        <RotateCcw size={20} />
-        Reset Players
-      </button>
-
-      {/* Action Buttons */}
-      <div className="flex gap-2 items-center">
-        <button
-          onClick={onBack}
-          className="btn-secondary"
-        >
-          Back
-        </button>
-        <button
-          onClick={onPlayersComplete}
-          className="btn-primary flex-1"
-        >
-          <Play size={20} />
-          Proceed to Match Tracker
-        </button>
       </div>
 
       {/* Reset Confirmation Modal */}

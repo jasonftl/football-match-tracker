@@ -25,14 +25,14 @@ const Timer = ({
   }, [periodStartTimestamp]);
 
   return (
-    <div className="bg-gray-700 p-4 sm:p-6 rounded-lg mb-4 sm:mb-6 text-center">
+    <div className="bg-gray-700 p-6 sm:p-8 rounded-lg mb-4 sm:mb-6 text-center w-full">
       {/* Period Display */}
-      <p className="text-base sm:text-lg text-gray-300 mb-2">
+      <p className="text-xl sm:text-2xl text-gray-300 mb-4">
         {getPeriodDisplayName(currentPeriod)} ({periodLength} minutes)
       </p>
 
       {/* Timer Display */}
-      <p className="text-4xl sm:text-5xl font-bold text-orange-500 mb-4">
+      <p className="text-6xl sm:text-7xl md:text-8xl font-bold text-orange-500 mb-6">
         {getCumulativeTimeFromRealTime(currentPeriod, periodStartTimestamp, periodLength)}
       </p>
 
