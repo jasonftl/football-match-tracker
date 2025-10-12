@@ -88,7 +88,6 @@ const MatchTracker = () => {
   const [showAICopied, setShowAICopied] = useState(false);
   const [aiError, setAIError] = useState(null);
   const [aiReport, setAiReport] = useState(null);
-  const [showAIReportModal, setShowAIReportModal] = useState(false);
 
   // State for goal button feedback
   const [goalButtonFeedback, setGoalButtonFeedback] = useState({ home: false, away: false });
@@ -564,57 +563,6 @@ const MatchTracker = () => {
     setPendingGoalPeriod(null);
   };
 
-  // AI Report modal handlers
-  const handleCopyAIReport = async () => {
-    if (!aiReport) return;
-
-    // Use textarea method first for iOS compatibility
-    const textArea = document.createElement('textarea');
-    textArea.value = aiReport;
-    textArea.style.position = 'fixed';
-    textArea.style.left = '-999999px';
-    textArea.style.top = '-999999px';
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-
-    let copySuccessful = false;
-    try {
-      copySuccessful = document.execCommand('copy');
-    } catch (err) {
-      console.error('Copy command failed:', err);
-    } finally {
-      document.body.removeChild(textArea);
-    }
-
-    // If textarea method failed, try modern clipboard API as fallback
-    if (!copySuccessful) {
-      try {
-        await navigator.clipboard.writeText(aiReport);
-        copySuccessful = true;
-      } catch (clipboardError) {
-        console.error('Clipboard API failed:', clipboardError);
-      }
-    }
-
-    if (copySuccessful) {
-      setShowAICopied(true);
-      setTimeout(() => {
-        setShowAICopied(false);
-        setShowAIReportModal(false);
-        setAiReport(null);
-      }, 2000);
-    } else {
-      alert('Could not copy automatically. Please select and copy the text manually.');
-    }
-  };
-
-  const handleCloseAIReportModal = () => {
-    setShowAIReportModal(false);
-    setAiReport(null);
-    setShowAICopied(false);
-  };
-
   // Generate match data text (shared by export and match data view)
   const generateMatchDataText = () => {
     const homeGoals = events.filter(e => e.type === 'goal' && e.team === homeTeam);
@@ -838,6 +786,15 @@ const MatchTracker = () => {
       }
     });
 
+    // Append AI Report if available
+    if (aiReport) {
+      exportText += '\n';
+      exportText += '='.repeat(50) + '\n';
+      exportText += 'AI MATCH REPORT\n';
+      exportText += '='.repeat(50) + '\n\n';
+      exportText += aiReport + '\n';
+    }
+
     return exportText;
   };
 
@@ -952,9 +909,8 @@ const MatchTracker = () => {
         throw new Error(`No report in response. Full response: ${responseText}`);
       }
 
-      // Store the report and show modal (iOS-friendly approach)
+      // Store the report (will be appended to match data)
       setAiReport(report);
-      setShowAIReportModal(true);
 
     } catch (error) {
       console.error('Error generating AI report:', error);
@@ -1827,32 +1783,6 @@ const MatchTracker = () => {
           isOpen={showUserAgreement}
           onAccept={handleAcceptUserAgreement}
         />
-
-        {/* AI Report Modal - iOS-friendly */}
-        {showAIReportModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
-            <div className="bg-gray-800 rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
-              <h2 className="text-xl font-bold text-orange-500 mb-4">AI Match Report</h2>
-              <div className="flex-1 overflow-y-auto mb-4 bg-gray-700 p-4 rounded text-gray-100 whitespace-pre-wrap text-sm">
-                {aiReport}
-              </div>
-              <div className="flex gap-3">
-                <button
-                  onClick={handleCopyAIReport}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-200"
-                >
-                  {showAICopied ? 'Copied!' : 'Copy to Clipboard'}
-                </button>
-                <button
-                  onClick={handleCloseAIReportModal}
-                  className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-lg transition duration-200"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
