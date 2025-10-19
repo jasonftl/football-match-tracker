@@ -9,7 +9,6 @@ const MatchDataView = ({
   onCopyToClipboard,
   onGenerateAIReport,
   showCopied,
-  aiEnabled,
   isFullTime,
   isGeneratingAI,
   aiError,
@@ -35,9 +34,9 @@ const MatchDataView = ({
           {/* AI Report Button (includes weather) */}
           <button
             onClick={onGenerateAIReport}
-            disabled={!aiEnabled || !isFullTime || isGeneratingAI}
+            disabled={!isFullTime || isGeneratingAI}
             className={`font-bold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2 ${
-              !aiEnabled || !isFullTime || isGeneratingAI
+              !isFullTime || isGeneratingAI
                 ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
                 : 'bg-purple-600 hover:bg-purple-700 text-white'
             }`}
@@ -48,12 +47,7 @@ const MatchDataView = ({
         </div>
 
         {/* Helper text */}
-        {!aiEnabled && (
-          <p className="text-xs text-yellow-400 text-center">
-            Enable AI Features in the About (Info) page to use AI Report
-          </p>
-        )}
-        {aiEnabled && !isFullTime && (
+        {!isFullTime && (
           <p className="text-xs text-yellow-400 text-center">
             AI Report only available after full time
           </p>

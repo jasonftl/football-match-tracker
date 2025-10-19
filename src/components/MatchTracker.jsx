@@ -4,6 +4,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Plus, FileText, Edit2, Trash2, Save, X, Play, Users, Info, ArrowLeft } from 'lucide-react';
+import HomePage from './HomePage';
 import MatchSetup from './MatchSetup';
 import PlayerSetup from './PlayerSetup';
 import Timer from './Timer';
@@ -12,6 +13,7 @@ import SubstitutionModal from './SubstitutionModal';
 import GoalScorerModal from './GoalScorerModal';
 import AboutModal from './AboutModal';
 import UserAgreementModal from './UserAgreementModal';
+import AIAgreementModal from './AIAgreementModal';
 import MatchDataView from './MatchDataView';
 import { AGE_GROUPS } from '../constants/ageGroups';
 import {
@@ -24,6 +26,9 @@ import {
 } from '../utils/helpers';
 
 const MatchTracker = () => {
+  // State for home page view
+  const [showHomePage, setShowHomePage] = useState(true);
+
   // State for modals
   const [showMissedGoalConfirm, setShowMissedGoalConfirm] = useState(false);
   const [missedGoalTeam, setMissedGoalTeam] = useState(null);
@@ -44,6 +49,9 @@ const MatchTracker = () => {
     const accepted = localStorage.getItem('userAgreementAccepted');
     return accepted !== 'true'; // Show if not accepted
   });
+
+  // State for AI agreement modal
+  const [showAIAgreement, setShowAIAgreement] = useState(false);
 
   // State for match configuration
   const [ageGroup, setAgeGroup] = useState('U7');
@@ -80,17 +88,10 @@ const MatchTracker = () => {
     const saved = localStorage.getItem('debugMode');
     return saved === 'true';
   });
-  const [aiEnabled, setAiEnabled] = useState(() => {
-    const saved = localStorage.getItem('aiEnabled');
-    return saved === 'true';
-  });
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [showAICopied, setShowAICopied] = useState(false);
   const [aiError, setAIError] = useState(null);
   const [aiReport, setAiReport] = useState(null);
-  const [isGeneratingWeather, setIsGeneratingWeather] = useState(false);
-  const [weatherError, setWeatherError] = useState(null);
-  const [weatherReport, setWeatherReport] = useState(null);
 
   // State for goal button feedback
   const [goalButtonFeedback, setGoalButtonFeedback] = useState({ home: false, away: false });
@@ -154,13 +155,11 @@ const MatchTracker = () => {
     localStorage.setItem('footballPlayers', JSON.stringify(players));
   }, [players]);
 
-  // Listen for debug mode and AI enabled changes
+  // Listen for debug mode changes
   useEffect(() => {
     const interval = setInterval(() => {
       const savedDebug = localStorage.getItem('debugMode');
       setDebugMode(savedDebug === 'true');
-      const savedAi = localStorage.getItem('aiEnabled');
-      setAiEnabled(savedAi === 'true');
     }, 500);
     return () => clearInterval(interval);
   }, []);
@@ -253,6 +252,9 @@ const MatchTracker = () => {
       description: `${period} Start`,
     };
     setEvents((prevEvents) => [...prevEvents, periodEvent]);
+
+    // Capture weather conditions when period starts (background, non-blocking)
+    captureWeatherForPeriod(period, getCurrentTimestamp(), formatTime(cumulativeStartTime));
   };
 
   const handleEndPeriod = (periodToEnd = null) => {
@@ -807,19 +809,19 @@ const MatchTracker = () => {
         exportText += goalLine + '\n';
       } else if (event.type === 'substitution') {
         exportText += `${event.description} - ${event.timestamp} [${event.timerValue}]\n`;
+      } else if (event.type === 'weather') {
+        let weatherLine = `${event.description}`;
+        if (event.weatherData && !event.weatherData.error) {
+          weatherLine += ` (${event.weatherData.humidity}%, ${event.weatherData.windSpeed} km/h ${event.weatherData.windDirection})`;
+        } else if (event.weatherData && event.weatherData.error) {
+          weatherLine += ` (${event.weatherData.error})`;
+        }
+        weatherLine += ` - ${event.timestamp} [${event.timerValue}]`;
+        exportText += weatherLine + '\n';
       } else if (event.type === 'match_end') {
         exportText += `${event.description} - ${event.timestamp} [${event.timerValue}]\n`;
       }
     });
-
-    // Append Weather Report if available
-    if (weatherReport) {
-      exportText += '\n';
-      exportText += '='.repeat(50) + '\n';
-      exportText += 'WEATHER REPORT\n';
-      exportText += '='.repeat(50) + '\n\n';
-      exportText += weatherReport + '\n';
-    }
 
     // Append AI Report if available
     if (aiReport) {
@@ -861,163 +863,166 @@ const MatchTracker = () => {
     setWeatherError(null);
   };
 
-  // Internal weather report generator (returns report string or null)
-  const generateWeatherReportInternal = async () => {
-    try {
-      // Get the match start time (first period start event)
-      const matchStartEvent = events.find(e => e.type === 'period_start');
-      if (!matchStartEvent) {
-        throw new Error('No match start time found');
-      }
-
-      // Try to get user's location using browser Geolocation API
-      let position;
+  // Capture weather for a specific period (background, non-blocking)
+  const captureWeatherForPeriod = async (period, periodTimestamp, timerValue) => {
+    // Run in background - don't await or block period start
+    (async () => {
       try {
-        position = await new Promise((resolve, reject) => {
-          if (!navigator.geolocation) {
-            reject(new Error('Geolocation not supported'));
-            return;
-          }
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
-            enableHighAccuracy: false,
-            timeout: 10000,
-            maximumAge: 300000 // Cache for 5 minutes
+        // Try to get user's location using browser Geolocation API
+        let position;
+        try {
+          position = await new Promise((resolve, reject) => {
+            if (!navigator.geolocation) {
+              reject(new Error('Geolocation not supported'));
+              return;
+            }
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              enableHighAccuracy: false,
+              timeout: 10000,
+              maximumAge: 300000 // Cache for 5 minutes
+            });
           });
-        });
-      } catch (geoError) {
-        // GPS not available or permission denied - create placeholder report
-        const report = `Match Time: ${matchStartEvent.timestamp}\n` +
-          `Location: Not available (GPS not enabled for web browser)\n\n` +
-          `Weather data unavailable - location services not enabled.`;
+        } catch (geoError) {
+          // GPS not available or permission denied - create event with error
+          const weatherEvent = {
+            id: Date.now() + Math.random(),
+            type: 'weather',
+            period: period,
+            timestamp: periodTimestamp,
+            timerValue: timerValue,
+            description: 'Weather: Location unavailable',
+            weatherData: {
+              error: 'Location services not enabled or permission denied',
+              conditions: null
+            }
+          };
+          setEvents((prevEvents) => [...prevEvents, weatherEvent]);
+          return;
+        }
 
-        setWeatherReport(report);
-        return report;
-      }
+        const { latitude, longitude } = position.coords;
 
-      const { latitude, longitude } = position.coords;
+        // Call Open-Meteo API (free, no API key required)
+        const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,wind_direction_10m&timezone=auto&forecast_days=1`;
 
-      // Parse the timestamp (HH:MM:SS format)
-      const [hours, minutes] = matchStartEvent.timestamp.split(':').map(Number);
-      const matchDate = new Date();
-      matchDate.setHours(hours, minutes, 0, 0);
+        const response = await fetch(weatherUrl);
 
-      // Format date for Open-Meteo API (YYYY-MM-DD)
-      const dateStr = matchDate.toISOString().split('T')[0];
+        if (!response.ok) {
+          throw new Error(`Weather API error: ${response.status}`);
+        }
 
-      // Format time for Open-Meteo API (HH:MM)
-      const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        const data = await response.json();
 
-      // Call Open-Meteo API (free, no API key required)
-      const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,wind_direction_10m&timezone=auto&forecast_days=1`;
-
-      const response = await fetch(weatherUrl);
-
-      if (!response.ok) {
-        throw new Error(`Weather API error: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      // Get weather code description
-      const getWeatherDescription = (code) => {
-        const weatherCodes = {
-          0: 'Clear sky',
-          1: 'Mainly clear',
-          2: 'Partly cloudy',
-          3: 'Overcast',
-          45: 'Foggy',
-          48: 'Depositing rime fog',
-          51: 'Light drizzle',
-          53: 'Moderate drizzle',
-          55: 'Dense drizzle',
-          61: 'Slight rain',
-          63: 'Moderate rain',
-          65: 'Heavy rain',
-          71: 'Slight snow',
-          73: 'Moderate snow',
-          75: 'Heavy snow',
-          80: 'Slight rain showers',
-          81: 'Moderate rain showers',
-          82: 'Violent rain showers',
-          95: 'Thunderstorm',
-          96: 'Thunderstorm with slight hail',
-          99: 'Thunderstorm with heavy hail'
+        // Get weather code description
+        const getWeatherDescription = (code) => {
+          const weatherCodes = {
+            0: 'Clear sky', 1: 'Mainly clear', 2: 'Partly cloudy', 3: 'Overcast',
+            45: 'Foggy', 48: 'Depositing rime fog',
+            51: 'Light drizzle', 53: 'Moderate drizzle', 55: 'Dense drizzle',
+            61: 'Slight rain', 63: 'Moderate rain', 65: 'Heavy rain',
+            71: 'Slight snow', 73: 'Moderate snow', 75: 'Heavy snow',
+            80: 'Slight rain showers', 81: 'Moderate rain showers', 82: 'Violent rain showers',
+            95: 'Thunderstorm', 96: 'Thunderstorm with slight hail', 99: 'Thunderstorm with heavy hail'
+          };
+          return weatherCodes[code] || 'Unknown';
         };
-        return weatherCodes[code] || 'Unknown';
-      };
 
-      // Get wind direction
-      const getWindDirection = (degrees) => {
-        const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
-        const index = Math.round(degrees / 22.5) % 16;
-        return directions[index];
-      };
+        // Get wind direction
+        const getWindDirection = (degrees) => {
+          const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+          const index = Math.round(degrees / 22.5) % 16;
+          return directions[index];
+        };
 
-      // Format weather report
-      const temp = data.current.temperature_2m;
-      const feelsLike = data.current.apparent_temperature;
-      const humidity = data.current.relative_humidity_2m;
-      const windSpeed = data.current.wind_speed_10m;
-      const windDir = getWindDirection(data.current.wind_direction_10m);
-      const weatherDesc = getWeatherDescription(data.current.weather_code);
-      const precipitation = data.current.precipitation || 0;
+        // Create weather event with data
+        const temp = data.current.temperature_2m;
+        const feelsLike = data.current.apparent_temperature;
+        const humidity = data.current.relative_humidity_2m;
+        const windSpeed = data.current.wind_speed_10m;
+        const windDir = getWindDirection(data.current.wind_direction_10m);
+        const weatherDesc = getWeatherDescription(data.current.weather_code);
+        const precipitation = data.current.precipitation || 0;
 
-      const report = `Match Time: ${matchStartEvent.timestamp}\n` +
-        `Location: ${latitude.toFixed(4)}°, ${longitude.toFixed(4)}°\n\n` +
-        `Conditions: ${weatherDesc}\n` +
-        `Temperature: ${temp}°C (Feels like ${feelsLike}°C)\n` +
-        `Humidity: ${humidity}%\n` +
-        `Wind: ${windSpeed} km/h ${windDir}\n` +
-        `Precipitation: ${precipitation} mm`;
+        const weatherEvent = {
+          id: Date.now() + Math.random(),
+          type: 'weather',
+          period: period,
+          timestamp: periodTimestamp,
+          timerValue: timerValue,
+          description: `Weather: ${weatherDesc}, ${temp}°C`,
+          weatherData: {
+            location: { latitude: latitude.toFixed(4), longitude: longitude.toFixed(4) },
+            conditions: weatherDesc,
+            temperature: temp,
+            feelsLike: feelsLike,
+            humidity: humidity,
+            windSpeed: windSpeed,
+            windDirection: windDir,
+            precipitation: precipitation,
+            error: null
+          }
+        };
 
-      setWeatherReport(report);
-      return report;
+        setEvents((prevEvents) => [...prevEvents, weatherEvent]);
 
-    } catch (error) {
-      console.error('Error generating weather report:', error);
+      } catch (error) {
+        console.error('Error capturing weather:', error);
 
-      let errorMessage = 'Failed to get weather data';
-      if (error.message === 'Geolocation not supported') {
-        errorMessage = 'Location services not available';
-      } else if (error.code === 1) {
-        errorMessage = 'Location permission denied';
-      } else if (error.code === 2) {
-        errorMessage = 'Location unavailable';
-      } else if (error.code === 3) {
-        errorMessage = 'Location request timeout';
-      } else if (error.message.includes('No match start time')) {
-        errorMessage = 'Match not started yet';
+        // Create event with error information
+        const weatherEvent = {
+          id: Date.now() + Math.random(),
+          type: 'weather',
+          period: period,
+          timestamp: periodTimestamp,
+          timerValue: timerValue,
+          description: 'Weather: Data unavailable',
+          weatherData: {
+            error: error.message || 'Failed to fetch weather data',
+            conditions: null
+          }
+        };
+        setEvents((prevEvents) => [...prevEvents, weatherEvent]);
       }
-
-      // Create placeholder report for errors
-      const matchStartEvent = events.find(e => e.type === 'period_start');
-      const report = `Match Time: ${matchStartEvent?.timestamp || 'Unknown'}\n` +
-        `Location: Not available\n\n` +
-        `Weather data unavailable - ${errorMessage}`;
-
-      setWeatherReport(report);
-      return report;
-    }
+    })();
   };
 
-  // Weather Report handler (for standalone button if needed)
-  const handleGenerateWeatherReport = async () => {
-    setIsGeneratingWeather(true);
-    setWeatherError(null);
-
-    await generateWeatherReportInternal();
-
-    setIsGeneratingWeather(false);
-  };
-
-  // AI Report handler
+  // AI Report handler - always shows confirmation modal
   const handleGenerateAIReport = async () => {
+    // Always show AI agreement modal before generating
+    setShowAIAgreement(true);
+  };
+
+  // Internal AI report generation (called after agreement)
+  const generateAIReportInternal = async () => {
     setIsGeneratingAI(true);
     setAIError(null);
 
     try {
-      // Step 1: Generate weather report first
-      await generateWeatherReportInternal();
+      // Step 1: Collect weather data from events
+      const weatherEvents = events.filter(e => e.type === 'weather');
+      let weatherReport = '';
+
+      if (weatherEvents.length > 0) {
+        weatherReport = '='.repeat(50) + '\n';
+        weatherReport += 'WEATHER CONDITIONS\n';
+        weatherReport += '='.repeat(50) + '\n\n';
+
+        weatherEvents.forEach((event, index) => {
+          weatherReport += `${event.period} Start - ${event.timestamp}:\n`;
+          if (event.weatherData.error) {
+            weatherReport += `  ${event.weatherData.error}\n`;
+          } else {
+            const wd = event.weatherData;
+            weatherReport += `  Location: ${wd.location.latitude}°, ${wd.location.longitude}°\n`;
+            weatherReport += `  Conditions: ${wd.conditions}\n`;
+            weatherReport += `  Temperature: ${wd.temperature}°C (Feels like ${wd.feelsLike}°C)\n`;
+            weatherReport += `  Humidity: ${wd.humidity}%\n`;
+            weatherReport += `  Wind: ${wd.windSpeed} km/h ${wd.windDirection}\n`;
+            weatherReport += `  Precipitation: ${wd.precipitation} mm\n`;
+          }
+          if (index < weatherEvents.length - 1) weatherReport += '\n';
+        });
+      }
 
       // Step 2: Generate match data with weather report included
       const homeGoals = events.filter(e => e.type === 'goal' && e.team === homeTeam);
@@ -1053,16 +1058,13 @@ const MatchTracker = () => {
         }
       });
 
-      // Append Weather Report if available (will be available from step 1)
+      // Append Weather Report if available (collected from weather events)
       if (weatherReport) {
         exportText += '\n';
-        exportText += '='.repeat(50) + '\n';
-        exportText += 'WEATHER REPORT\n';
-        exportText += '='.repeat(50) + '\n\n';
         exportText += weatherReport + '\n';
       }
 
-      // Step 3: Call AI API with match data + weather
+      // Step 2: Call AI API with match data + weather
       const response = await fetch('/api/generate-report', {
         method: 'POST',
         headers: {
@@ -1230,11 +1232,9 @@ const MatchTracker = () => {
     setEvents([]);
     setPeriodStarted(false);
 
-    // Clear AI and weather reports
+    // Clear AI report
     setAiReport(null);
-    setWeatherReport(null);
     setAIError(null);
-    setWeatherError(null);
 
     localStorage.setItem('footballMatchData', JSON.stringify({
       ...savedSettings,
@@ -1248,6 +1248,9 @@ const MatchTracker = () => {
     }));
 
     setShowResetConfirm(false);
+
+    // Return to home page
+    setShowHomePage(true);
   };
 
   const cancelReset = () => {
@@ -1258,6 +1261,35 @@ const MatchTracker = () => {
   const handleAcceptUserAgreement = () => {
     localStorage.setItem('userAgreementAccepted', 'true');
     setShowUserAgreement(false);
+  };
+
+  // AI agreement handlers
+  const handleAcceptAIAgreement = async () => {
+    setShowAIAgreement(false);
+    // Proceed with AI report generation
+    await generateAIReportInternal();
+  };
+
+  const handleDeclineAIAgreement = () => {
+    setShowAIAgreement(false);
+  };
+
+  // Home page handlers
+  const handleStartNewMatch = () => {
+    setShowHomePage(false);
+  };
+
+  const handleViewPreviousMatches = () => {
+    // TODO: Implement previous matches view
+    alert('Previous matches feature coming soon!');
+  };
+
+  const handleShowAboutFromHome = () => {
+    setShowAbout(true);
+  };
+
+  const handleBackToHome = () => {
+    setShowHomePage(true);
   };
 
   // Helper function to record goal with random time within a period
@@ -1499,6 +1531,25 @@ const MatchTracker = () => {
     });
   };
 
+  // Show HomePage if not dismissed
+  if (showHomePage) {
+    return (
+      <>
+        <HomePage
+          onStartNewMatch={handleStartNewMatch}
+          onViewPreviousMatches={handleViewPreviousMatches}
+          onShowAbout={handleShowAboutFromHome}
+        />
+
+        {/* About Modal */}
+        <AboutModal
+          isOpen={showAbout}
+          onClose={() => setShowAbout(false)}
+        />
+      </>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-900 p-3 sm:p-4">
       <div className="max-w-2xl mx-auto bg-gray-800 rounded-lg shadow-lg p-4 sm:p-6">
@@ -1508,7 +1559,17 @@ const MatchTracker = () => {
             Football Match Tracker
           </h1>
           <div className="flex items-center gap-3">
-            {/* Back button - shown on Player Setup, Match Data View, and Match Tracker (before match starts) screens */}
+            {/* Back button - shown on Match Setup, Player Setup, Match Data View, and Match Tracker (before match starts) screens */}
+            {!setupComplete && (
+              <button
+                onClick={handleBackToHome}
+                className="text-gray-400 hover:text-orange-500 transition duration-200 flex items-center gap-1 px-3 py-2 rounded-lg border border-gray-600 hover:border-orange-500"
+                title="Back to Home"
+              >
+                <ArrowLeft size={20} />
+                <span className="text-sm font-medium">Back</span>
+              </button>
+            )}
             {(setupComplete && !playersConfigured) && (
               <button
                 onClick={handleBackToSetup}
@@ -1603,27 +1664,35 @@ const MatchTracker = () => {
           <>
             {/* Match Summary */}
             <div className="bg-gray-700 p-3 sm:p-4 rounded-lg mb-4 sm:mb-6" key={`summary-${refreshKey}`}>
-              <div>
-                <div className="flex justify-center items-center mb-3">
-                  <span className="text-sm sm:text-lg font-bold text-gray-100 text-right flex-1 truncate">{homeTeam}</span>
-                  <span className="text-base sm:text-lg font-bold text-orange-500 px-2 whitespace-nowrap">{homeGoals.length}–{awayGoals.length}</span>
-                  <span className="text-sm sm:text-lg font-bold text-gray-100 text-left flex-1 truncate">{awayTeam}</span>
-                </div>
-                {(homeGoals.length > 0 || awayGoals.length > 0) && (
-                  <div className="flex justify-start items-start text-xs sm:text-sm text-gray-400">
-                    <div className="flex-1 text-right italic pr-2">
+              <div className="flex justify-center items-start gap-2">
+                {/* Home Team Column */}
+                <div className="flex-1 flex flex-col items-end">
+                  <span className="text-sm sm:text-lg font-bold text-gray-100 text-right break-words mb-1">{homeTeam}</span>
+                  {homeGoals.length > 0 && (
+                    <div className="text-xs sm:text-sm text-gray-400 text-right italic">
                       {formatGoalScorers(homeGoals).map((line, idx) => (
                         <div key={idx}>{line}</div>
                       ))}
                     </div>
-                    <div className="px-2 whitespace-nowrap" style={{minWidth: '60px'}}></div>
-                    <div className="flex-1 text-left italic">
+                  )}
+                </div>
+
+                {/* Score */}
+                <div className="flex items-start">
+                  <span className="text-6xl sm:text-7xl md:text-8xl font-bold text-orange-500 px-3 sm:px-4 whitespace-nowrap">{homeGoals.length}–{awayGoals.length}</span>
+                </div>
+
+                {/* Away Team Column */}
+                <div className="flex-1 flex flex-col items-start">
+                  <span className="text-sm sm:text-lg font-bold text-gray-100 text-left break-words mb-1">{awayTeam}</span>
+                  {awayGoals.length > 0 && (
+                    <div className="text-xs sm:text-sm text-gray-400 text-left italic">
                       {formatGoalScorers(awayGoals).map((line, idx) => (
                         <div key={idx}>{line}</div>
                       ))}
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
 
@@ -1808,7 +1877,7 @@ const MatchTracker = () => {
                 onClick={handleResetMatch}
                 className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg transition duration-200"
               >
-                End/Reset Match
+                Reset Match & Start Over
               </button>
             </div>
 
@@ -1907,6 +1976,18 @@ const MatchTracker = () => {
                               <>
                                 {event.subType === 'on' ? 'SUB ON' : 'SUB OFF'}: {event.playerName || `Player ${event.playerNumber}`}
                               </>
+                            ) : event.type === 'weather' ? (
+                              <>
+                                <span className="text-cyan-400">☁ {event.description}</span>
+                                {event.weatherData && !event.weatherData.error && (
+                                  <span className="text-gray-400 text-sm ml-2">
+                                    (Humidity: {event.weatherData.humidity}%, Wind: {event.weatherData.windSpeed} km/h {event.weatherData.windDirection})
+                                  </span>
+                                )}
+                                {event.weatherData && event.weatherData.error && (
+                                  <span className="text-yellow-400 text-sm ml-2">({event.weatherData.error})</span>
+                                )}
+                              </>
                             ) : (
                               <>
                                 {event.description}
@@ -1949,7 +2030,6 @@ const MatchTracker = () => {
             onCopyToClipboard={handleCopyMatchData}
             onGenerateAIReport={handleGenerateAIReport}
             showCopied={showCopied}
-            aiEnabled={aiEnabled}
             isFullTime={events.some(e => e.type === 'match_end')}
             isGeneratingAI={isGeneratingAI}
             aiError={aiError}
@@ -2040,6 +2120,13 @@ const MatchTracker = () => {
         <UserAgreementModal
           isOpen={showUserAgreement}
           onAccept={handleAcceptUserAgreement}
+        />
+
+        {/* AI Agreement Modal - Before AI Report Generation */}
+        <AIAgreementModal
+          isOpen={showAIAgreement}
+          onAccept={handleAcceptAIAgreement}
+          onDecline={handleDeclineAIAgreement}
         />
       </div>
     </div>

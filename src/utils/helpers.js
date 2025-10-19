@@ -3,13 +3,21 @@
 /**
  * Format seconds as HH:MM:SS
  * @param {number} seconds - Total seconds
+ * @param {boolean} useHours - If false, format as MM:SS with minutes exceeding 60 (default: true)
  * @returns {string} Formatted time string
  */
-export const formatTime = (seconds) => {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = seconds % 60;
-  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+export const formatTime = (seconds, useHours = true) => {
+  if (useHours) {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  } else {
+    // Format as MM:SS where minutes can exceed 60
+    const totalMinutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${totalMinutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }
 };
 
 /**
@@ -105,7 +113,7 @@ export const getElapsedSeconds = (startTimestamp) => {
  * @param {string} currentPeriod - Current period code
  * @param {number} periodStartTimestamp - When current period started (milliseconds)
  * @param {number} periodLength - Length of each period in minutes
- * @returns {string} Formatted cumulative time MM:SS
+ * @returns {string} Formatted cumulative time MM:SS (minutes can exceed 60)
  */
 export const getCumulativeTimeFromRealTime = (currentPeriod, periodStartTimestamp, periodLength) => {
   let previousMinutes = 0;
@@ -118,7 +126,7 @@ export const getCumulativeTimeFromRealTime = (currentPeriod, periodStartTimestam
   const elapsedSeconds = getElapsedSeconds(periodStartTimestamp);
   const totalSeconds = (previousMinutes * 60) + elapsedSeconds;
 
-  return formatTime(totalSeconds);
+  return formatTime(totalSeconds, false); // Use MM:SS format (useHours = false)
 };
 
 /**

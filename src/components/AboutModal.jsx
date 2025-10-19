@@ -11,25 +11,12 @@ const AboutModal = ({ isOpen, onClose }) => {
     return saved === 'true';
   });
 
-  const [aiEnabled, setAiEnabled] = useState(() => {
-    const saved = localStorage.getItem('aiEnabled');
-    return saved === 'true';
-  });
-
   useEffect(() => {
     localStorage.setItem('debugMode', debugMode.toString());
   }, [debugMode]);
 
-  useEffect(() => {
-    localStorage.setItem('aiEnabled', aiEnabled.toString());
-  }, [aiEnabled]);
-
   const handleToggleDebug = () => {
     setDebugMode(!debugMode);
-  };
-
-  const handleToggleAi = () => {
-    setAiEnabled(!aiEnabled);
   };
 
   if (!isOpen) return null;
@@ -75,7 +62,7 @@ const AboutModal = ({ isOpen, onClose }) => {
             <li>Power Play Support: Automatic extra player allowance for U7-U10 when trailing</li>
             <li>Match Events: View complete chronological list of all match events</li>
             <li>Export: Copy detailed match data to clipboard for sharing</li>
-            <li><strong>AI Match Reports:</strong> Generate narrative match reports using AI (requires internet, enable in settings below)</li>
+            <li><strong>AI Match Reports:</strong> Generate narrative match reports using AI (requires internet)</li>
             <li>Offline Support: Core features work completely offline once installed</li>
             <li>Data Persistence: Match settings, player squad lists, and substitute status saved automatically</li>
           </ul>
@@ -211,9 +198,9 @@ const AboutModal = ({ isOpen, onClose }) => {
 
             <p className="font-bold text-gray-200 mt-3">AI Match Report Feature (Optional):</p>
             <ul className="list-disc ml-5 space-y-1">
-              <li>When you choose to use this feature, match data (team names, first names, match events) is sent to OpenRouter's AI service</li>
+              <li>When you choose to use this feature, match data (team names, first names, match events, GPS location, weather) is sent to OpenRouter's AI service</li>
               <li>Data may be processed by the AI provider for improving their models</li>
-              <li>Feature must be enabled in settings below</li>
+              <li>You will be asked to agree to terms before generating your first report</li>
             </ul>
             <p className="text-xs text-gray-400 mt-1">
               Privacy Policy: <span className="text-gray-300">https://openrouter.ai/privacy</span>
@@ -261,35 +248,6 @@ const AboutModal = ({ isOpen, onClose }) => {
 
           <div className="mt-6 pt-6 border-t border-gray-700 text-center text-sm text-gray-400">
             <p>© 2025 - All rights reserved</p>
-          </div>
-        </div>
-
-        {/* AI Features Toggle */}
-        <div className="mt-6 pt-6 border-t border-gray-700">
-          <div className="flex items-center justify-between">
-            <label className="text-sm font-medium text-gray-300">
-              AI Match Reports (Requires internet connection)
-            </label>
-            <button
-              onClick={handleToggleAi}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                aiEnabled ? 'bg-orange-600' : 'bg-gray-600'
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  aiEnabled ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
-          </div>
-          <p className="text-xs text-gray-400 mt-2">
-            {aiEnabled ? 'AI report button enabled' : 'AI report button disabled'}
-          </p>
-          <div className="bg-blue-900 border border-blue-600 rounded p-3 mt-3">
-            <p className="text-xs text-blue-200">
-              <strong>Privacy Note:</strong> When enabled, match data (including first names) will be sent to OpenRouter's AI service and may be used for improving their models. Use first names only to minimise identifiable data.
-            </p>
           </div>
         </div>
 
