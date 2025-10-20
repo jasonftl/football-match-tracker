@@ -168,7 +168,7 @@ const AboutModal = ({ isOpen, onClose }) => {
               <li>Export match data before resetting</li>
               <li>Review and edit any incorrect times or player assignments</li>
               <li>Share the exported data with parents/coaches</li>
-              <li>If using AI reports: use player names only to minimise identifiable data</li>
+              <li>If using AI reports: use first names only to minimise identifiable data</li>
               <li>Consider clearing old match data you no longer need</li>
             </ul>
           </div>
@@ -210,7 +210,7 @@ const AboutModal = ({ isOpen, onClose }) => {
 
             <p className="font-bold text-gray-200 mt-3">AI Match Report Feature (Optional):</p>
             <ul className="list-disc ml-5 space-y-1">
-              <li>When you choose to use this feature, match data (team names, player names, match events, GPS location, weather) is sent to OpenRouter's AI service</li>
+              <li>When you choose to use this feature, match data (team names, first names, match events, GPS location, weather) is sent to OpenRouter's AI service</li>
               <li>Data may be processed by the AI provider for improving their models</li>
               <li>You will be asked to agree to terms before generating your first report</li>
             </ul>
@@ -220,7 +220,7 @@ const AboutModal = ({ isOpen, onClose }) => {
 
             <p className="font-bold text-gray-200 mt-3">Data Protection Tips:</p>
             <ul className="list-disc ml-5 space-y-1">
-              <li>Use player names only (e.g., "John" not "John Smith") to minimise identifiable data</li>
+              <li>Use first names only (e.g., "John" not "John Smith") to minimise identifiable data</li>
               <li>Clear old match data you no longer need</li>
               <li>You are responsible for any personal data you include</li>
               <li>The app's developer does not collect, view, or store any match data</li>
@@ -232,7 +232,7 @@ const AboutModal = ({ isOpen, onClose }) => {
             <p className="font-bold text-gray-200">By using this app, you agree to:</p>
             <ol className="list-decimal ml-5 space-y-1">
               <li>Take responsibility for any personal data you enter</li>
-              <li>Use player names only (not full names) to minimise identifiable data</li>
+              <li>Use first names only (not full names) to minimise identifiable data</li>
               <li>Understand that the optional AI feature sends data to third-party services</li>
               <li>Accept the app "as is" with no warranty</li>
               <li>Ensure your use complies with applicable laws and regulations</li>

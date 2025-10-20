@@ -65,7 +65,7 @@ const UserAgreementModal = ({ isOpen, onAccept }) => {
 
             <h3 className="text-lg font-bold text-orange-500 mt-4">3. Data Protection Tips</h3>
             <ul className="list-disc ml-5 space-y-1">
-              <li>Use player names only (e.g., "John" not "John Smith") to minimise identifiable data</li>
+              <li>Use first names only (e.g., "John" not "John Smith") to minimise identifiable data</li>
               <li>Clear old match data you no longer need</li>
               <li>Ensure your use complies with applicable laws and regulations</li>
             </ul>
@@ -83,7 +83,7 @@ const UserAgreementModal = ({ isOpen, onAccept }) => {
               <p className="font-bold text-white">By clicking "I Agree", you confirm that:</p>
               <ul className="list-disc ml-5 space-y-1 mt-2">
                 <li>You have read and understood these terms</li>
-                <li>You will use player names only to minimise identifiable data</li>
+                <li>You will use first names only to minimise identifiable data</li>
                 <li>You understand the optional AI feature sends data to third-party services</li>
                 <li>You accept the app "as is" with no warranty</li>
                 <li>You are old enough to enter into this agreement</li>
