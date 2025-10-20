@@ -24,7 +24,7 @@ const AIAgreementModal = ({ isOpen, onAccept, onDecline }) => {
             This will send your match data (teams, players, events, weather) to OpenRouter AI to generate a narrative match report.
           </p>
           <p className="text-gray-400 text-xs">
-            Reminder: Use player names only to minimise identifiable data.
+            Reminder: Use first names only to minimise identifiable data.
           </p>
         </div>
 
