@@ -1881,13 +1881,13 @@ const MatchTracker = () => {
 
             {/* Action Buttons */}
             <div className="flex gap-3 mb-6">
-              {/* View/Copy Match Data Button */}
+              {/* View/Copy Match Report Button */}
               <button
                 onClick={handleViewMatchData}
                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-200 flex items-center justify-center gap-2"
               >
                 <FileText size={20} />
-                View/Copy Match Data
+                View/Copy Match Report
               </button>
 
               {/* Reset Button */}

@@ -40,7 +40,7 @@ const MatchDataView = ({
             className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2"
           >
             <Copy size={20} />
-            {showCopied ? 'Copied!' : 'Copy'}
+            {showCopied ? 'Copied!' : 'Copy to Clipboard'}
           </button>
 
           {/* AI Report Button (includes weather) */}
