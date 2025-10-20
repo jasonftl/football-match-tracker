@@ -1,10 +1,34 @@
 // Home Page Component
 // First screen users see - intro and navigation to main features
 
-import React from 'react';
-import { Play, History, Info } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Play, History, Info, RefreshCw } from 'lucide-react';
 
 const HomePage = ({ onStartNewMatch, onViewPreviousMatches, onShowAbout }) => {
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [updateSW, setUpdateSW] = useState(null);
+
+  // Listen for PWA update events
+  useEffect(() => {
+    const handleUpdate = (event) => {
+      setUpdateAvailable(true);
+      setUpdateSW(() => event.detail.updateSW);
+    };
+
+    window.addEventListener('pwa-update-available', handleUpdate);
+
+    return () => {
+      window.removeEventListener('pwa-update-available', handleUpdate);
+    };
+  }, []);
+
+  // Handle update button click
+  const handleUpdate = () => {
+    if (updateSW) {
+      updateSW(true); // This will reload the page with the new version
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 p-3 sm:p-4">
       <div className="max-w-2xl mx-auto bg-gray-800 rounded-lg shadow-lg p-4 sm:p-6">
@@ -58,6 +82,17 @@ const HomePage = ({ onStartNewMatch, onViewPreviousMatches, onShowAbout }) => {
               <Play size={24} />
               Track New Match
             </button>
+
+            {/* Update Available Button */}
+            {updateAvailable && (
+              <button
+                onClick={handleUpdate}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 sm:py-4 px-6 rounded-lg transition duration-200 flex items-center justify-center gap-3 text-base sm:text-lg animate-pulse"
+              >
+                <RefreshCw size={24} />
+                Update Available - Update Now
+              </button>
+            )}
 
             {/* Previous Matches */}
             <button
