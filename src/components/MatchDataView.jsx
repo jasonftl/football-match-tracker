@@ -2,7 +2,7 @@
 // Displays match data with options to copy or generate AI report
 
 import React from 'react';
-import { Copy, Sparkles } from 'lucide-react';
+import { Copy, Sparkles, ArrowDown } from 'lucide-react';
 
 const MatchDataView = ({
   matchData,
@@ -12,7 +12,19 @@ const MatchDataView = ({
   isFullTime,
   isGeneratingAI,
   aiError,
+  aiReport,
 }) => {
+  // Function to scroll to AI report section (at bottom of page)
+  const scrollToAIReport = () => {
+    window.scrollTo({
+      top: document.documentElement.scrollHeight,
+      behavior: 'smooth'
+    });
+  };
+
+  // Determine if AI report has been generated
+  const hasAIReport = aiReport && !aiError;
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -33,16 +45,27 @@ const MatchDataView = ({
 
           {/* AI Report Button (includes weather) */}
           <button
-            onClick={onGenerateAIReport}
-            disabled={!isFullTime || isGeneratingAI}
+            onClick={hasAIReport ? scrollToAIReport : onGenerateAIReport}
+            disabled={(!isFullTime || isGeneratingAI) && !hasAIReport}
             className={`font-bold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2 ${
-              !isFullTime || isGeneratingAI
+              hasAIReport
+                ? 'bg-green-600 hover:bg-green-700 text-white cursor-pointer'
+                : !isFullTime || isGeneratingAI
                 ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
                 : 'bg-purple-600 hover:bg-purple-700 text-white'
             }`}
           >
-            <Sparkles size={20} />
-            {isGeneratingAI ? 'Generating...' : 'AI Report'}
+            {hasAIReport ? (
+              <>
+                <ArrowDown size={20} />
+                Scroll to Report
+              </>
+            ) : (
+              <>
+                <Sparkles size={20} />
+                {isGeneratingAI ? 'Generating...' : 'AI Report'}
+              </>
+            )}
           </button>
         </div>
 
@@ -52,10 +75,15 @@ const MatchDataView = ({
             AI Report only available after full time
           </p>
         )}
+        {hasAIReport && (
+          <p className="text-xs text-green-400 text-center">
+            AI Report generated successfully - scroll down to view
+          </p>
+        )}
       </div>
 
       {/* Match Data Display */}
-      <div className="bg-gray-700 p-4 rounded-lg max-h-96 overflow-y-auto">
+      <div className="bg-gray-700 p-4 rounded-lg">
         <pre className="text-gray-100 text-sm font-mono whitespace-pre-wrap break-words">
           {matchData}
         </pre>

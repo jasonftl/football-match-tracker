@@ -99,6 +99,23 @@ export const getCurrentTimestamp = () => {
 };
 
 /**
+ * Get current date in ddd dd/mmm/yyyy format
+ * @returns {string} Current date (e.g., "Mon 20/Jan/2025")
+ */
+export const getCurrentDate = () => {
+  const now = new Date();
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  const dayName = days[now.getDay()];
+  const day = now.getDate().toString().padStart(2, '0');
+  const month = months[now.getMonth()];
+  const year = now.getFullYear();
+
+  return `${dayName} ${day}/${month}/${year}`;
+};
+
+/**
  * Calculate elapsed seconds from a real-time timestamp to now
  * @param {number} startTimestamp - Start time in milliseconds (from Date.now())
  * @returns {number} Elapsed seconds

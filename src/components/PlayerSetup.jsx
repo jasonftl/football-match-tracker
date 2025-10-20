@@ -185,7 +185,7 @@ const PlayerSetup = ({
       </div>
 
       {/* Player List */}
-      <div ref={playerListRef} className="space-y-2 max-h-96 overflow-y-auto">
+      <div ref={playerListRef} className="space-y-2">
         {players.map((player, index) => (
           <div key={index} className="flex gap-2 items-center bg-gray-700 p-3 rounded-lg">
             {/* Sub Toggle */}

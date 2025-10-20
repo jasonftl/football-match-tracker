@@ -20,6 +20,7 @@ import {
   formatTime,
   calculateMatchMinute,
   getCurrentTimestamp,
+  getCurrentDate,
   getPeriods,
   getElapsedSeconds,
   getCumulativeTimeFromRealTime
@@ -112,7 +113,14 @@ const MatchTracker = () => {
       setMatchStarted(data.matchStarted || false);
       setCurrentPeriod(data.currentPeriod || null);
       setPeriodStartTimestamp(data.periodStartTimestamp || null);
-      setEvents(data.events || []);
+      // Migrate events to include date field if missing (backward compatibility)
+      const migratedEvents = (data.events || []).map(event => {
+        if (!event.date) {
+          return { ...event, date: getCurrentDate() };
+        }
+        return event;
+      });
+      setEvents(migratedEvents);
       setUseQuarters(data.useQuarters !== undefined ? data.useQuarters : false);
       setPeriodLength(data.periodLength || 30);
       setIsHome(data.isHome !== undefined ? data.isHome : true);
@@ -247,6 +255,7 @@ const MatchTracker = () => {
       id: Date.now() + Math.random(),
       type: 'period_start',
       period: period,
+      date: getCurrentDate(),
       timestamp: getCurrentTimestamp(),
       timerValue: formatTime(cumulativeStartTime),
       description: `${period} Start`,
@@ -278,6 +287,7 @@ const MatchTracker = () => {
       id: Date.now() + Math.random(),
       type: 'period_end',
       period: periodBeingEnded,
+      date: getCurrentDate(),
       timestamp: getCurrentTimestamp(),
       timerValue: formatTime(cumulativeEndTime),
       description: `${periodBeingEnded} End`,
@@ -304,6 +314,7 @@ const MatchTracker = () => {
       const matchEndEvent = {
         id: Date.now() + Math.random(),
         type: 'match_end',
+        date: getCurrentDate(),
         timestamp: getCurrentTimestamp(),
         timerValue: formatTime(cumulativeEndTime),
         description: 'Match End',
@@ -354,6 +365,7 @@ const MatchTracker = () => {
       type: 'goal',
       team: team,
       period: periodToUse,
+      date: getCurrentDate(),
       timestamp: getCurrentTimestamp(),
       timerValue: formatTime(cumulativeTime),
       description: `Goal - ${team}`,
@@ -447,6 +459,7 @@ const MatchTracker = () => {
             type: editedEventData.type,
             team: editedEventData.team,
             period: editedEventData.period,
+            date: editedEventData.date,
             timestamp: editedEventData.timestamp,
             timerValue: editedEventData.timerValue,
             description: editedEventData.description,
@@ -783,7 +796,7 @@ const MatchTracker = () => {
     // Add Match Events
     events.forEach(event => {
       if (event.type === 'period_start' || event.type === 'period_end') {
-        exportText += `${event.description} - ${event.timestamp} [${event.timerValue}]\n`;
+        exportText += `${event.description} - ${event.date} ${event.timestamp} [${event.timerValue}]\n`;
       } else if (event.type === 'goal') {
         let goalLine = `${event.description}`;
 
@@ -805,10 +818,10 @@ const MatchTracker = () => {
         if (event.isPenalty) {
           goalLine += ` (Penalty)`;
         }
-        goalLine += ` - ${event.timestamp} [${event.timerValue}]`;
+        goalLine += ` - ${event.date} ${event.timestamp} [${event.timerValue}]`;
         exportText += goalLine + '\n';
       } else if (event.type === 'substitution') {
-        exportText += `${event.description} - ${event.timestamp} [${event.timerValue}]\n`;
+        exportText += `${event.description} - ${event.date} ${event.timestamp} [${event.timerValue}]\n`;
       } else if (event.type === 'weather') {
         let weatherLine = `${event.description}`;
         if (event.weatherData && !event.weatherData.error) {
@@ -816,10 +829,10 @@ const MatchTracker = () => {
         } else if (event.weatherData && event.weatherData.error) {
           weatherLine += ` (${event.weatherData.error})`;
         }
-        weatherLine += ` - ${event.timestamp} [${event.timerValue}]`;
+        weatherLine += ` - ${event.date} ${event.timestamp} [${event.timerValue}]`;
         exportText += weatherLine + '\n';
       } else if (event.type === 'match_end') {
-        exportText += `${event.description} - ${event.timestamp} [${event.timerValue}]\n`;
+        exportText += `${event.description} - ${event.date} ${event.timestamp} [${event.timerValue}]\n`;
       }
     });
 
@@ -888,6 +901,7 @@ const MatchTracker = () => {
             id: Date.now() + Math.random(),
             type: 'weather',
             period: period,
+            date: getCurrentDate(),
             timestamp: periodTimestamp,
             timerValue: timerValue,
             description: 'Weather: Location unavailable',
@@ -947,6 +961,7 @@ const MatchTracker = () => {
           id: Date.now() + Math.random(),
           type: 'weather',
           period: period,
+          date: getCurrentDate(),
           timestamp: periodTimestamp,
           timerValue: timerValue,
           description: `Weather: ${weatherDesc}, ${temp}°C`,
@@ -973,6 +988,7 @@ const MatchTracker = () => {
           id: Date.now() + Math.random(),
           type: 'weather',
           period: period,
+          date: getCurrentDate(),
           timestamp: periodTimestamp,
           timerValue: timerValue,
           description: 'Weather: Data unavailable',
@@ -1008,7 +1024,7 @@ const MatchTracker = () => {
         weatherReport += '='.repeat(50) + '\n\n';
 
         weatherEvents.forEach((event, index) => {
-          weatherReport += `${event.period} Start - ${event.timestamp}:\n`;
+          weatherReport += `${event.period} Start - ${event.date} ${event.timestamp}:\n`;
           if (event.weatherData.error) {
             weatherReport += `  ${event.weatherData.error}\n`;
           } else {
@@ -1033,7 +1049,7 @@ const MatchTracker = () => {
       // Add all match events in chronological order (simple format)
       events.forEach(event => {
         if (event.type === 'period_start' || event.type === 'period_end') {
-          exportText += `${event.description} - ${event.timestamp} [${event.timerValue}]\n`;
+          exportText += `${event.description} - ${event.date} ${event.timestamp} [${event.timerValue}]\n`;
         } else if (event.type === 'goal') {
           let goalLine = `${event.description}`;
           if (event.playerNumber) {
@@ -1049,12 +1065,12 @@ const MatchTracker = () => {
           if (event.isPenalty) {
             goalLine += ` (Penalty)`;
           }
-          goalLine += ` - ${event.timestamp} [${event.timerValue}]`;
+          goalLine += ` - ${event.date} ${event.timestamp} [${event.timerValue}]`;
           exportText += goalLine + '\n';
         } else if (event.type === 'substitution') {
-          exportText += `${event.description} - ${event.timestamp} [${event.timerValue}]\n`;
+          exportText += `${event.description} - ${event.date} ${event.timestamp} [${event.timerValue}]\n`;
         } else if (event.type === 'match_end') {
-          exportText += `${event.description} - ${event.timestamp} [${event.timerValue}]\n`;
+          exportText += `${event.description} - ${event.date} ${event.timestamp} [${event.timerValue}]\n`;
         }
       });
 
@@ -1189,6 +1205,7 @@ const MatchTracker = () => {
           id: Date.now() + Math.random(), // Ensure unique IDs
           type: 'substitution',
           period: periodForSub,
+          date: getCurrentDate(),
           timestamp: getCurrentTimestamp(),
           timerValue: formatTime(cumulativeTime),
           description: change.from === 'starting'
@@ -1316,6 +1333,7 @@ const MatchTracker = () => {
       type: 'goal',
       team: team,
       period: period,
+      date: getCurrentDate(),
       timestamp: getCurrentTimestamp(),
       timerValue: formatTime(cumulativeTime),
       description: `Goal - ${team}`,
@@ -1884,7 +1902,7 @@ const MatchTracker = () => {
             {/* Match Events */}
             <div className="mb-6">
               <h2 className="text-xl font-bold text-orange-500 mb-4">Match Events</h2>
-              <div className="space-y-2 max-h-96 overflow-y-auto">
+              <div className="space-y-2">
                 {events.length === 0 && (
                   <p className="text-gray-400 text-center py-4">No events recorded yet</p>
                 )}
@@ -1995,7 +2013,7 @@ const MatchTracker = () => {
                             )}
                           </p>
                           <p className="text-sm text-gray-400">
-                            {event.timestamp} [{event.timerValue}]
+                            {event.date} {event.timestamp} [{event.timerValue}]
                           </p>
                         </div>
                         {event.type === 'goal' && (
@@ -2033,6 +2051,7 @@ const MatchTracker = () => {
             isFullTime={events.some(e => e.type === 'match_end')}
             isGeneratingAI={isGeneratingAI}
             aiError={aiError}
+            aiReport={aiReport}
           />
         )}
 
