@@ -210,7 +210,7 @@ const AboutModal = ({ isOpen, onClose }) => {
 
             <p className="font-bold text-gray-200 mt-3">AI Match Report Feature (Optional):</p>
             <ul className="list-disc ml-5 space-y-1">
-              <li>When you choose to use this feature, match data (team names, first names, match events, GPS location, weather) is sent to OpenRouter's AI service</li>
+              <li>When you choose to use this feature, match data (team names, player names, match events, GPS location, weather) is sent to OpenRouter's AI service</li>
               <li>Data may be processed by the AI provider for improving their models</li>
               <li>You will be asked to agree to terms before generating your first report</li>
             </ul>
