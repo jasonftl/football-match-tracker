@@ -22,8 +22,8 @@ const AboutModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
-      <div className="bg-gray-800 rounded-lg p-6 max-w-4xl w-full border border-gray-700 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-3 sm:p-4 z-50">
+      <div className="bg-gray-800 rounded-lg shadow-lg p-4 sm:p-6 max-w-2xl w-full border border-gray-700 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-2">
@@ -194,6 +194,18 @@ const AboutModal = ({ isOpen, onClose }) => {
             </ul>
             <p className="text-xs text-gray-400 mt-1">
               Privacy Policy: <span className="text-gray-300">https://vercel.com/legal/privacy-policy</span>
+            </p>
+
+            <p className="font-bold text-gray-200 mt-3">Location & Weather Data:</p>
+            <ul className="list-disc ml-5 space-y-1">
+              <li>Your device's GPS location may be accessed as part of match tracking functionality</li>
+              <li>Location coordinates are sent to Open-Meteo weather API to fetch weather conditions</li>
+              <li>Weather data (temperature, wind, conditions) is recorded with match data and can be included in AI reports</li>
+              <li>Location data is not stored permanently, logged, or used for any other purpose</li>
+              <li>You can deny location permission - the app will still function without weather data</li>
+            </ul>
+            <p className="text-xs text-gray-400 mt-1">
+              Open-Meteo Privacy: <span className="text-gray-300">https://open-meteo.com (no user data collection, free API)</span>
             </p>
 
             <p className="font-bold text-gray-200 mt-3">AI Match Report Feature (Optional):</p>

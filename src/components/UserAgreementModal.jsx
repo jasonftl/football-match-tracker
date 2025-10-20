@@ -19,8 +19,8 @@ const UserAgreementModal = ({ isOpen, onAccept }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-4 z-50">
-      <div className="bg-gray-800 rounded-lg p-6 max-w-2xl w-full border-2 border-orange-500 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-3 sm:p-4 z-50">
+      <div className="bg-gray-800 rounded-lg shadow-lg p-4 sm:p-6 max-w-2xl w-full border-2 border-orange-500 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
           <AlertTriangle size={32} className="text-orange-500" />
@@ -48,15 +48,19 @@ const UserAgreementModal = ({ isOpen, onAccept }) => {
               <li>Clearing browser data will delete all match information</li>
             </ul>
 
-            <h3 className="text-lg font-bold text-orange-500 mt-4">2. Online Features</h3>
+            <h3 className="text-lg font-bold text-orange-500 mt-4">2. Online Features & Location Usage</h3>
             <ul className="list-disc ml-5 space-y-1">
               <li>App hosted on Vercel - may collect anonymous usage analytics</li>
               <li>No personally identifiable information collected via analytics</li>
               <li>Optional AI Match Report feature sends match data to OpenRouter's AI service</li>
               <li>Data sent to AI may be processed for improving their models</li>
+              <li><strong>Location access:</strong> Your GPS location may be requested as part of match tracking to fetch weather data from Open-Meteo API</li>
+              <li>Location coordinates and weather conditions are part of match tracking and may be included in exported data and AI reports</li>
+              <li>Location data is not stored permanently, logged, or used for any other purpose</li>
+              <li>You can deny location permission - the app will still function without weather data</li>
             </ul>
             <p className="text-xs text-gray-400 mt-2">
-              Privacy Policies: Vercel (<span className="text-gray-300">https://vercel.com/legal/privacy-policy</span>), OpenRouter (<span className="text-gray-300">https://openrouter.ai/privacy</span>)
+              Privacy Policies: Vercel (<span className="text-gray-300">https://vercel.com/legal/privacy-policy</span>), OpenRouter (<span className="text-gray-300">https://openrouter.ai/privacy</span>), Open-Meteo (<span className="text-gray-300">https://open-meteo.com</span>)
             </p>
 
             <h3 className="text-lg font-bold text-orange-500 mt-4">3. Data Protection Tips</h3>
