@@ -1,6 +1,8 @@
 // Vercel Serverless Function to generate AI match reports
 // This proxies requests to OpenRouter AI to keep API keys server-side
 
+import { AI_REPORTER_PROMPT, AI_MODEL } from './prompts/ai-reporter.js';
+
 export default async function handler(req, res) {
   // Only allow POST requests
   if (req.method !== 'POST') {
@@ -30,11 +32,11 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'deepseek/deepseek-v3.1-terminus',
+        model: AI_MODEL,
         messages: [
           {
             role: 'system',
-            content: 'You are an AI sports writer covering grassroots football. Write short, honest match reports in clear British English. Capture the spirit of the game — the teamwork, graft, and small turning points — without exaggeration or flattery. Celebrate effort, learning, and moments of character as much as results or goals. Keep the tone warm and fair, showing pride in the team as a whole. A parent reading should feel their child\'s part mattered, and the story should sound like it came from the touchline, not a press office.'
+            content: AI_REPORTER_PROMPT
           },
           {
             role: 'user',
